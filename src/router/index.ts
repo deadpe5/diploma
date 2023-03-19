@@ -2,10 +2,8 @@ import AppVue from '@/App.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
 enum RoutesName {
-  Root = 'root',
-
+  Root = 'root'
 }
-
 
 enum RoutesPath {
   Root = '/'
