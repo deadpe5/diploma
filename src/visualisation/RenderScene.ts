@@ -7,26 +7,35 @@ import {
   Color4,
   Texture,
   Vector4,
-  HemisphericLight
+  HemisphericLight,
+  Matrix,
+  GizmoManager,
+  PointerEventTypes
 } from '@babylonjs/core'
-import CameraWrapper from './CameraWrapper'
+import RenderCamera from './CameraWrapper'
+import { useVisualisationStore } from '@/stores/visualisationStore'
 
 class RenderScene {
   private readonly canvas: HTMLCanvasElement
   private readonly engine: Engine
   private readonly scene: Scene
-  private readonly camera: CameraWrapper
+  private readonly camera: RenderCamera
+  private readonly gizmoManager: GizmoManager
+  private readonly visualisationStore = useVisualisationStore()
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
     this.engine = new Engine(this.canvas)
     this.scene = new Scene(this.engine)
+    this.gizmoManager = new GizmoManager(this.scene)
+    this.gizmoManager.positionGizmoEnabled = true;
+    this.gizmoManager.rotationGizmoEnabled = true;
 
     this.canvas.addEventListener('wheel', (evt) => evt.preventDefault())
     this.scene.clearColor = new Color4(1, 1, 1, 1)
 
-    this.camera = new CameraWrapper(this.scene, this.canvas)
-
+    this.camera = new RenderCamera(this.scene, this.canvas)
+    
     // TODO remove later
     new HemisphericLight('light', new Vector3(1, 1, 0), this.scene)
 
@@ -43,6 +52,8 @@ class RenderScene {
 
       window.addEventListener('resize', resize)
     }
+
+    this.addOnPointerObservable()
   }
 
   changView(view: string) {
@@ -98,8 +109,36 @@ class RenderScene {
     return this.scene
   }
 
-  getActiveCamera(): CameraWrapper {
+  getActiveCamera(): RenderCamera {
     return this.camera
+  }
+
+  private addOnPointerObservable() {
+    let pointerX = 0
+    let pointerY = 0
+    this.scene.onPointerObservable.add((evt) => {
+      if (evt.type === PointerEventTypes.POINTERDOWN) {
+        pointerX = evt.event.clientX
+        pointerY = evt.event.clientY
+        return
+      }
+
+      if (evt.type === PointerEventTypes.POINTERUP) {
+        if (pointerX === evt.event.clientX &&
+          pointerY === evt.event.clientY) {
+          const pickingRay = this.scene.createPickingRay(pointerX, pointerY, Matrix.Identity(), this.camera)
+          const hitInfo = this.scene.pickWithRay(pickingRay)
+          if (hitInfo && hitInfo.hit) {
+            this.visualisationStore.selectedMesh = hitInfo.pickedMesh
+          }
+          else {
+            this.visualisationStore.selectedMesh = null
+            this.gizmoManager.attachToMesh(null)
+          }
+        }
+      }
+
+    })
   }
 }
 

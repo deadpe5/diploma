@@ -1,25 +1,22 @@
 import { ArcRotateCamera, Vector3, type Scene, Animation } from '@babylonjs/core'
 
-class CameraWrapper {
-  private readonly camera: ArcRotateCamera
-  private readonly scene: Scene
+class RenderCamera extends ArcRotateCamera{
 
   constructor(scene: Scene, canvas: HTMLCanvasElement) {
-    this.camera = new ArcRotateCamera('camera', Math.PI / 4, Math.PI / 3, 10, Vector3.Zero(), scene)
-    this.scene = scene
-    this.camera.attachControl(canvas, true)
+    super('camera', Math.PI / 4, Math.PI / 3, 10, Vector3.Zero(), scene)
+    this.attachControl(canvas, true)
   }
 
   public rotateCamera(alpha: number, beta: number) {
     const speed = 75
     const framesCount = 60
 
-    const currentAlpha = this.camera.alpha
-    const currentBeta = this.camera.beta
+    const currentAlpha = this.alpha
+    const currentBeta = this.beta
 
     Animation.CreateAndStartAnimation(
       'camAlpha',
-      this.camera,
+      this,
       'alpha',
       speed,
       framesCount,
@@ -28,12 +25,12 @@ class CameraWrapper {
       0,
       undefined,
       undefined,
-      this.scene
+      this.getScene()
     )
 
     Animation.CreateAndStartAnimation(
       'camBeta',
-      this.camera,
+      this,
       'beta',
       speed,
       framesCount,
@@ -42,26 +39,26 @@ class CameraWrapper {
       0,
       undefined,
       undefined,
-      this.scene
+      this.getScene()
     )
   }
 
   public zoomToFit() {
     let maximumRadius = 0
-    for (const mesh of this.scene.meshes) {
+    for (const mesh of this.getScene().meshes) {
       const boundingSphere = mesh.getBoundingInfo().boundingSphere
       const distanceToCenter = Vector3.Distance(Vector3.ZeroReadOnly, boundingSphere.centerWorld)
       maximumRadius = Math.max(maximumRadius, distanceToCenter + boundingSphere.radiusWorld)
     }
 
-    const aspectRatio = this.scene.getEngine().getAspectRatio(this.camera)
-    let halfMinFov = this.camera.fov / 2
+    const aspectRatio = this.getScene().getEngine().getAspectRatio(this)
+    let halfMinFov = this.fov / 2
     if (aspectRatio < 1) {
       halfMinFov = Math.atan(aspectRatio * Math.tan(halfMinFov))
     }
     const viewRadius = Math.abs(maximumRadius / Math.sin(halfMinFov))
-    this.camera.radius = viewRadius
+    this.radius = viewRadius
   }
 }
 
-export default CameraWrapper
+export default RenderCamera
