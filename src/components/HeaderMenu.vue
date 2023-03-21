@@ -1,48 +1,48 @@
 <template>
   <div class="diploma-header">
     <v-toolbar height="32px" rounded elevation="2" style="padding: 5px 0px">
-      <v-btn rounded="lg" size="small" icon @click="changeView('+X')">
+      <v-btn rounded="lg" size="small" icon @click="changeView('+X')" color="primary">
         <font-awesome-icon icon="fa-solid fa-cube" size="2xl" />
         <v-tooltip activator="parent" location="bottom" text="+X" />
       </v-btn>
 
-      <v-btn rounded="lg" size="small" icon @click="changeView('-X')">
+      <v-btn rounded="lg" size="small" icon @click="changeView('-X')" color="primary">
         <font-awesome-icon icon="fa-solid fa-cube" size="2xl" flip="both" />
         <v-tooltip activator="parent" location="bottom" text="-X" />
       </v-btn>
 
-      <v-btn rounded="lg" size="small" icon @click="changeView('+Y')">
-        <font-awesome-icon icon="fa-solid fa-cube" size="2xl" flip="horizontal" />
+      <v-btn rounded="lg" size="small" icon @click="changeView('+Y')" color="primary">
+        <font-awesome-icon icon="fa-solid fa-cube" size="2xl" flip="horizontal"/>
         <v-tooltip activator="parent" location="bottom" text="+Y" />
       </v-btn>
 
-      <v-btn rounded="lg" size="small" icon @click="changeView('-Y')">
+      <v-btn rounded="lg" size="small" icon @click="changeView('-Y')" color="primary">
         <font-awesome-icon icon="fa-solid fa-cube" size="2xl" flip="vertical" />
         <v-tooltip activator="parent" location="bottom" text="-Y" />
       </v-btn>
 
-      <v-btn rounded="lg" size="small" icon @click="changeView('+Z')">
+      <v-btn rounded="lg" size="small" icon @click="changeView('+Z')" color="primary">
         <v-icon size="22px">
           <TopFilledCubeIcon />
         </v-icon>
         <v-tooltip activator="parent" location="bottom" text="+Z" />
       </v-btn>
 
-      <v-btn rounded="lg" size="small" icon @click="changeView('-Z')">
+      <v-btn rounded="lg" size="small" icon @click="changeView('-Z')" color="primary">
         <v-icon size="22px" style="transform: rotate(180deg)">
-          <TopFilledCubeIcon />
+          <TopFilledCubeIcon/>
         </v-icon>
         <v-tooltip activator="parent" location="bottom" text="-Z" />
       </v-btn>
 
-      <v-btn rounded="lg" size="small" icon @click="changeView('XYZ')">
+      <v-btn rounded="lg" size="small" icon @click="changeView('XYZ')" color="primary">
         <v-icon size="22px">
-          <OutlineCubeIcon />
+          <OutlineCubeIcon/>
         </v-icon>
         <v-tooltip activator="parent" location="bottom" text="Isometric View" />
       </v-btn>
 
-      <v-btn rounded="lg" size="small" icon @click="zoomToFit">
+      <v-btn rounded="lg" size="small" icon @click="zoomToFit" color="primary">
         <font-awesome-icon icon="fa-solid fa-expand" size="2xl" />
         <v-tooltip activator="parent" location="bottom" text="Zoom to Fit" />
       </v-btn>

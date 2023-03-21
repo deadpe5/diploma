@@ -28,8 +28,9 @@ class RenderScene {
     this.engine = new Engine(this.canvas)
     this.scene = new Scene(this.engine)
     this.gizmoManager = new GizmoManager(this.scene)
-    this.gizmoManager.positionGizmoEnabled = true;
-    this.gizmoManager.rotationGizmoEnabled = true;
+    this.gizmoManager.positionGizmoEnabled = true
+    this.gizmoManager.rotationGizmoEnabled = true
+    this.gizmoManager.enableAutoPicking = false
 
     this.canvas.addEventListener('wheel', (evt) => evt.preventDefault())
     this.scene.clearColor = new Color4(1, 1, 1, 1)
@@ -129,6 +130,7 @@ class RenderScene {
           const pickingRay = this.scene.createPickingRay(pointerX, pointerY, Matrix.Identity(), this.camera)
           const hitInfo = this.scene.pickWithRay(pickingRay)
           if (hitInfo && hitInfo.hit) {
+            this.gizmoManager.attachToMesh(hitInfo.pickedMesh)
             this.visualisationStore.selectedMesh = hitInfo.pickedMesh
           }
           else {

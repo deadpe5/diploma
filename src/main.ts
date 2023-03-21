@@ -20,7 +20,7 @@ import { faCube, faExpand } from '@fortawesome/free-solid-svg-icons'
 import '@mdi/font/css/materialdesignicons.css'
 import './assets/main.css'
 
-library.add(faCube, faExpand)
+library.add(faCube, faExpand,)
 
 const pinia = createPinia()
 const vuetify = createVuetify({
