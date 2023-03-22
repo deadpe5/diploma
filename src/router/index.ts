@@ -1,4 +1,4 @@
-import AppVue from '@/App.vue'
+import ToolBarNavigation from '@/components/Tools/ToolBarNavigation.vue'
 import AddMeshTool from '@/components/Tools/AddMeshTool.vue'
 import AddFluidTool from '@/components/Tools/AddFluidTool.vue'
 import RotateTool from '@/components/Tools/RotateTool.vue'
@@ -27,7 +27,7 @@ const router = createRouter({
     {
       name: RoutesName.Root,
       path: RoutesPath.Root,
-      component: AppVue
+      component: ToolBarNavigation
     },
     {
       name: RoutesName.MoveTool,

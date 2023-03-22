@@ -1,29 +1,7 @@
 <template>
     <div class="diploma-toolbar">
-        <v-card min-width="250px">
-            <v-card-title>
-                <p class="text-h4 text--primary">
-                    Tools
-                </p>
-            </v-card-title>
-            <div class="d-flex flex-column mb-6">
-                <v-btn class="ma-2 pa-2 justify-start" color="primary">
-                    <v-icon class="v-btn__prepend" icon="mdi-cube" />
-                    Add Mesh
-                </v-btn>
-                <v-btn class="ma-2 pa-2 justify-start" color="primary">
-                    <v-icon class="v-btn__prepend" icon="mdi-water" />
-                    Add Fluid
-                </v-btn>
-                <v-btn class="ma-2 pa-2 justify-start" color="primary">
-                    <v-icon class="v-btn__prepend" icon="mdi-rotate-orbit" />
-                    Rotate
-                </v-btn>
-                <v-btn class="ma-2 pa-2 justify-start" color="primary">
-                    <v-icon class="v-btn__prepend" icon="mdi-transition" />
-                    Move
-                </v-btn>
-            </div>
+        <v-card min-width="250px" elevation="2">
+            <router-view></router-view>
         </v-card>
     </div>
 </template>

@@ -27,7 +27,7 @@ class RenderScene {
     this.canvas = canvas
     this.engine = new Engine(this.canvas)
     this.scene = new Scene(this.engine)
-    this.gizmoManager = new GizmoManager(this.scene)
+    this.gizmoManager = new GizmoManager(this.scene, 2)
     this.gizmoManager.positionGizmoEnabled = true
     this.gizmoManager.rotationGizmoEnabled = true
     this.gizmoManager.enableAutoPicking = false
