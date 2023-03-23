@@ -30,6 +30,13 @@
 </template>
 
 <script setup lang="ts">
-import { useVisualisationStore } from '@/stores/visualisationStore';
+import { onMounted } from 'vue'
+import { useVisualisationStore } from '@/stores/visualisationStore'
+
 const visualisationStore = useVisualisationStore()
+
+onMounted(() => {
+  visualisationStore.deselectable = true
+})
+
 </script>

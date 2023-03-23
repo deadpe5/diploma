@@ -79,7 +79,7 @@ class RenderScene {
         this.camera.rotateCamera(PI / 2, PI)
         return
       case 'XYZ':
-        this.camera.rotateCamera(PI / 4, PI / 3)
+        this.camera.rotateCamera(-PI / 4, PI / 3)
         return
     }
   }
@@ -133,7 +133,7 @@ class RenderScene {
             this.gizmoManager.attachToMesh(hitInfo.pickedMesh)
             this.visualisationStore.selectedMesh = hitInfo.pickedMesh
           }
-          else {
+          else if (this.visualisationStore.deselectable) {
             this.visualisationStore.selectedMesh = null
             this.gizmoManager.attachToMesh(null)
           }

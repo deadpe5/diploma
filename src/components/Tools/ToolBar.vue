@@ -1,6 +1,6 @@
 <template>
     <div class="diploma-toolbar">
-        <v-card min-width="250px" elevation="2">
+        <v-card min-width="300px" elevation="2">
             <router-view></router-view>
         </v-card>
     </div>

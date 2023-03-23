@@ -6,7 +6,8 @@ export const useVisualisationStore = defineStore('visulisationStore', {
   state: () => {
     return {
       renderScene: null as RenderScene | null,
-      selectedMesh: null as AbstractMesh | null
+      selectedMesh: null as AbstractMesh | null,
+      deselectable: true
     }
   },
   
