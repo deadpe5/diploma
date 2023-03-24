@@ -14,6 +14,7 @@ import {
 } from '@babylonjs/core'
 import RenderCamera from './CameraWrapper'
 import { useVisualisationStore } from '@/stores/visualisationStore'
+import MeshManager from './MeshManager'
 
 class RenderScene {
   private readonly canvas: HTMLCanvasElement
@@ -21,6 +22,7 @@ class RenderScene {
   private readonly scene: Scene
   private readonly camera: RenderCamera
   private readonly gizmoManager: GizmoManager
+  private readonly meshManager: MeshManager
   private readonly visualisationStore = useVisualisationStore()
 
   constructor(canvas: HTMLCanvasElement) {
@@ -40,7 +42,8 @@ class RenderScene {
     // TODO remove later
     new HemisphericLight('light', new Vector3(1, 1, 0), this.scene)
 
-    this.addTestCube()
+    this.meshManager = new MeshManager(this.scene)
+    this.meshManager.addTestCube()
 
     this.engine.runRenderLoop(() => {
       this.scene.render()
@@ -84,34 +87,16 @@ class RenderScene {
     }
   }
 
-  addTestCube() {
-    const material = new StandardMaterial('materialForTestCube')
-    const texture = new Texture('https://assets.babylonjs.com/environments/numbers.jpg')
-    material.diffuseTexture = texture
-
-    const columns = 6
-    const rows = 1
-    const faceUV = new Array(6)
-
-    for (let i = 0; i < columns; ++i) {
-      faceUV[i] = new Vector4(i / columns, 0, (i + 1) / columns, 1 / rows)
-    }
-
-    const options = {
-      faceUV: faceUV,
-      wrap: true
-    }
-
-    const box = MeshBuilder.CreateBox('box', options, this.scene)
-    box.material = material
-  }
-
   getScene(): Scene {
     return this.scene
   }
 
   getActiveCamera(): RenderCamera {
     return this.camera
+  }
+
+  getMeshManager(): MeshManager {
+    return this.meshManager
   }
 
   private addOnPointerObservable() {
