@@ -27,6 +27,7 @@
                 </v-btn>
             </template>
         </v-text-field>
+        <v-switch v-model="LCS" label="Perform rotation in LCS" color="primary" ></v-switch>
         <v-btn width="100%" color="primary" variant="outlined" style="margin-bottom: 22px;" @click="restoreRotation">
             Restore rotation
         </v-btn>
@@ -49,6 +50,7 @@ function isValid(value: string): boolean {
 const X = ref(null)
 const Y = ref(null)
 const Z = ref(null)
+const LCS = ref(false)
 
 function apply(axis: string) {
     let value: number = 0
@@ -77,7 +79,8 @@ function apply(axis: string) {
 
     if (value !== 0) {
         const radians = value * Math.PI / 180
-        visualisationStore.rotateSelectedMesh(axis, radians)
+        const rotationInLCS = LCS.value
+        visualisationStore.rotateSelectedMesh(axis, radians, rotationInLCS)
     }
 }
 

@@ -1,5 +1,5 @@
 import { useVisualisationStore } from '@/stores/visualisationStore'
-import { MeshBuilder, StandardMaterial, Texture, Vector4, Scene, Vector3 } from '@babylonjs/core'
+import { MeshBuilder, StandardMaterial, Texture, Vector4, Scene, Vector3, Space } from '@babylonjs/core'
 
 export default class MeshManager {
     private readonly scene: Scene
@@ -20,11 +20,11 @@ export default class MeshManager {
         }
     }
 
-    public moveSelectedMesh(axisName: string, value: number) {
+    public moveSelectedMesh(axisName: string, value: number, LCS: boolean) {
         const selectedMesh = this.visualisationStore.selectedMesh
         const axis = this.axisNameMap.get(axisName)
         if (selectedMesh && axis) {
-            selectedMesh.position.addInPlace(axis.scale(value))
+            selectedMesh.translate(axis, value, LCS ? Space.LOCAL : Space.WORLD)
         }
     }
 
@@ -35,11 +35,11 @@ export default class MeshManager {
         }
     }
 
-    public rotateSelectedMesh(axisName: string, value: number) {
+    public rotateSelectedMesh(axisName: string, value: number, LCS: boolean) {
         const selectedMesh = this.visualisationStore.selectedMesh
         const axis = this.axisNameMap.get(axisName)
         if (selectedMesh && axis) {
-            selectedMesh.rotation.addInPlace(axis.scale(value))
+            selectedMesh.rotate(axis, value, LCS ? Space.LOCAL : Space.WORLD)
         }
     }
 

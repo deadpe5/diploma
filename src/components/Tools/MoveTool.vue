@@ -27,6 +27,7 @@
                 </v-btn>
             </template>
         </v-text-field>
+        <v-switch v-model="LCS" label="Perform movement in LCS" color="primary" ></v-switch>
         <v-btn width="100%" color="primary" variant="outlined" style="margin-bottom: 22px;" @click="recenter">
             Recenter
         </v-btn>
@@ -49,6 +50,7 @@ function isValid(value: string): boolean {
 const X = ref(null)
 const Y = ref(null)
 const Z = ref(null)
+const LCS = ref(false)
 
 function apply(axis: string) {
     let value: number = 0
@@ -76,7 +78,8 @@ function apply(axis: string) {
     }
 
     if (value !== 0) {
-        visualisationStore.moveSelectedMesh(axis, value)
+        const movementInLCS = LCS.value
+        visualisationStore.moveSelectedMesh(axis, value, movementInLCS)
     }
 }
 
@@ -93,5 +96,9 @@ onMounted(() => {
 .v-input__append {
     padding-top: 0 !important;
     align-items: center;
+}
+
+.text-right {
+  text-align: right;
 }
 </style>

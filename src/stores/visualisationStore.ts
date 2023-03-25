@@ -40,9 +40,9 @@ export const useVisualisationStore = defineStore('visulisationStore', {
       }
     },
 
-    moveSelectedMesh(axis: string, value: number) {
+    moveSelectedMesh(axis: string, value: number, LCS: boolean) {
       if (this.renderScene) {
-        this.renderScene.getMeshManager().moveSelectedMesh(axis, value)
+        this.renderScene.getMeshManager().moveSelectedMesh(axis, value, LCS)
       }
     },
 
@@ -52,9 +52,9 @@ export const useVisualisationStore = defineStore('visulisationStore', {
       }
     },
 
-    rotateSelectedMesh(axis: string, value: number) {
+    rotateSelectedMesh(axis: string, value: number, LCS: boolean) {
       if (this.renderScene) {
-        this.renderScene.getMeshManager().rotateSelectedMesh(axis, value)
+        this.renderScene.getMeshManager().rotateSelectedMesh(axis, value, LCS)
       }
     }
 
