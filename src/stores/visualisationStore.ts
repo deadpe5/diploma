@@ -6,10 +6,11 @@ export const useVisualisationStore = defineStore('visulisationStore', {
   state: () => {
     return {
       renderScene: null as RenderScene | null,
-      selectedMesh: null as AbstractMesh | null
+      selectedMesh: null as AbstractMesh | null,
+      deselectable: true
     }
   },
-  
+
   actions: {
     init(canvas: HTMLCanvasElement) {
       this.renderScene = new RenderScene(canvas)
@@ -32,6 +33,30 @@ export const useVisualisationStore = defineStore('visulisationStore', {
         this.renderScene.getActiveCamera().zoomToFit()
       }
     },
-    
+
+    recenterSelectedMesh() {
+      if (this.renderScene) {
+        this.renderScene.getMeshManager().recenterSelectedMesh()
+      }
+    },
+
+    moveSelectedMesh(axis: string, value: number, LCS: boolean) {
+      if (this.renderScene) {
+        this.renderScene.getMeshManager().moveSelectedMesh(axis, value, LCS)
+      }
+    },
+
+    restoreSelectedMeshRotation() {
+      if (this.renderScene) {
+        this.renderScene.getMeshManager().restoreSelectedMeshRotation()
+      }
+    },
+
+    rotateSelectedMesh(axis: string, value: number, LCS: boolean) {
+      if (this.renderScene) {
+        this.renderScene.getMeshManager().rotateSelectedMesh(axis, value, LCS)
+      }
+    }
+
   }
 })
