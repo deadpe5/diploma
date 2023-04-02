@@ -32,10 +32,10 @@ enum RoutesPath {
   MoveTool = '/move',
 
   AddBoxMesh = '/addMesh/addBoxMesh',
-  AddCylinderMesh = '/addMeshaddCylinderMesh',
-  AddSphereMesh = '/addMeshaddSphereMesh',
-  AddTorusMesh = '/addMeshaddTorusMesh',
-  AddCustomMesh = '/addMeshaddCustomMesh',
+  AddCylinderMesh = '/addMesh/addCylinderMesh',
+  AddSphereMesh = '/addMesh/addSphereMesh',
+  AddTorusMesh = '/addMesh/addTorusMesh',
+  AddCustomMesh = '/addMesh/addCustomMesh',
 }
 
 const router = createRouter({

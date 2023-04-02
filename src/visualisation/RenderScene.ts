@@ -25,6 +25,7 @@ class RenderScene {
     this.canvas = canvas
     this.engine = new Engine(this.canvas)
     this.scene = new Scene(this.engine)
+    this.scene.useRightHandedSystem = true
     this.gizmoManager = new GizmoManager(this.scene, 2)
     this.gizmoManager.positionGizmoEnabled = true
     this.gizmoManager.rotationGizmoEnabled = true
@@ -85,6 +86,10 @@ class RenderScene {
 
   getScene(): Scene {
     return this.scene
+  }
+
+  getEngine(): Engine {
+    return this.engine
   }
 
   getActiveCamera(): RenderCamera {
