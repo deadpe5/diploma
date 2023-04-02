@@ -1,5 +1,6 @@
 import type { fileTypes } from '@/constants'
 import RenderScene from '@/visualisation/RenderScene'
+import type { IBoxOptions } from '@/visualisation/types'
 import type { AbstractMesh } from '@babylonjs/core/Meshes'
 import { defineStore } from 'pinia'
 
@@ -8,6 +9,7 @@ export const useVisualisationStore = defineStore('visulisationStore', {
     return {
       renderScene: null as RenderScene | null,
       selectedMesh: null as AbstractMesh | null,
+      meshToAdd: null as AbstractMesh | null,
       deselectable: true,
       isLoading: false,
 
@@ -49,6 +51,12 @@ export const useVisualisationStore = defineStore('visulisationStore', {
       }
     },
 
+    zoomToFitAddMesh() {
+      if (this.renderScene) {
+        this.renderScene.getActiveCamera().zoomToFitAddMesh()
+      }
+    },
+
     recenterSelectedMesh() {
       if (this.renderScene) {
         this.renderScene.getMeshManager().recenterSelectedMesh()
@@ -76,7 +84,19 @@ export const useVisualisationStore = defineStore('visulisationStore', {
     importMeshFromFile(fileType: fileTypes, url: string) {
       if (this.renderScene) {
         this.renderScene.getMeshManager().importMeshFromFile(fileType, url)
-          .then( () => this.isLoading = false)
+          .then(() => this.isLoading = false)
+      }
+    },
+
+    disposeMeshToAdd() {
+      if (this.renderScene) {
+        this.renderScene.getMeshManager().disposeMeshToAdd()
+      }
+    },
+
+    addBoxToScene(options: IBoxOptions) {
+      if (this.renderScene) {
+        this.renderScene.getMeshManager().addBoxToScene(options)
       }
     }
 

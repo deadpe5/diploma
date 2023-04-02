@@ -16,6 +16,7 @@ import { fileTypes } from '../constants'
 import '@babylonjs/loaders/STL'
 import '@babylonjs/loaders/OBJ'
 import '@babylonjs/loaders/glTF'
+import type { IBoxOptions } from './types'
 
 export default class MeshManager {
     private readonly scene: Scene
@@ -104,6 +105,21 @@ export default class MeshManager {
                 vertexData.normals = normals
                 vertexData.applyToMesh(mesh as Mesh)
             }
+        }
+    }
+
+    public addBoxToScene(options: IBoxOptions) {
+        this.disposeMeshToAdd()
+
+        const height = options.height
+        const width = options.width
+        const depth = options.depth
+        this.visualisationStore.meshToAdd = MeshBuilder.CreateBox('box', { height: height, width: width, depth: depth }, this.scene)
+    }
+
+    public disposeMeshToAdd() {
+        if (this.visualisationStore.meshToAdd) {
+            this.visualisationStore.meshToAdd.dispose()
         }
     }
 }

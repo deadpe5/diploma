@@ -4,20 +4,21 @@
     </v-card-title>
     <div class="d-flex flex-column mb-6">
         <v-label class="ml-4 mb-2">Dimensions</v-label>
-        <v-text-field label="Height" variant="solo" class="ml-4 mr-4"
+        <v-text-field label="Height" variant="solo" class="ml-4 mr-4" v-model="height"
             :rules="[v => isValid(v) || 'Must be a number and greater than 0']"></v-text-field>
-        <v-text-field label="Width" variant="solo" class="ml-4 mr-4"
+        <v-text-field label="Width" variant="solo" class="ml-4 mr-4" v-model="width"
             :rules="[v => isValid(v) || 'Must be a number and greater than 0']"></v-text-field>
-        <v-text-field label="Depth" variant="solo" class="ml-4 mr-4"
+        <v-text-field label="Depth" variant="solo" class="ml-4 mr-4" v-model="depth"
             :rules="[v => isValid(v) || 'Must be a number and greater than 0']"></v-text-field>
         <div class="d-flex flex-row">
-            <v-btn class="ma-2 justify-start" color="secondary" variant="outlined" :to="{ name: 'addMeshTool' }">
+            <v-btn class="ma-2 justify-start" color="secondary" variant="outlined" @click="cancel"
+                :to="{ name: 'addMeshTool' }">
                 <v-icon class="v-btn__prepend" icon="mdi-arrow-left" />
                 Cancel
             </v-btn>
 
-            <!-- TODO add mesh to scene -->
-            <v-btn class="ma-2 justify-start" color="primary" :to="{ name: 'root' }">
+            <v-btn class="ma-2 justify-start" color="primary" :to="{ name: 'root' }" @click="confirm"
+                :disabled="confirmButtonDisabled()">
                 <v-icon class="v-btn__prepend" icon="mdi-check" />
                 Confirm
             </v-btn>
@@ -26,9 +27,55 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, watch } from 'vue'
+import { useVisualisationStore } from '@/stores/visualisationStore'
+import type { IBoxOptions } from '@/visualisation/types';
+
+const height = ref(1)
+const width = ref(1)
+const depth = ref(1)
+const visualisationStore = useVisualisationStore()
+
+onMounted(() => {
+    const options: IBoxOptions = {
+        height: height.value,
+        width: width.value,
+        depth: depth.value,
+    }
+
+    visualisationStore.addBoxToScene(options)
+    visualisationStore.zoomToFitAddMesh()
+})
+
+watch([height, width, depth], () => {
+    if (confirmButtonDisabled()) {
+        return
+    }
+
+    const options: IBoxOptions = {
+        height: height.value,
+        width: width.value,
+        depth: depth.value,
+    }
+
+    visualisationStore.addBoxToScene(options)
+    visualisationStore.zoomToFitAddMesh()
+})
+
+function cancel() {
+    visualisationStore.disposeMeshToAdd()
+}
+
+function confirm() {
+    visualisationStore.meshToAdd = null
+}
 
 function isValid(value: string): boolean {
     return !isNaN(Number(value)) && (Number(value) > 0)
+}
+
+function confirmButtonDisabled(): boolean {
+    return !isValid(height.value.toString()) || !isValid(width.value.toString()) || !isValid(depth.value.toString())
 }
 
 </script>

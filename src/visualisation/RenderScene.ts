@@ -35,7 +35,7 @@ class RenderScene {
     this.scene.clearColor = new Color4(1, 1, 1, 1)
 
     this.camera = new RenderCamera(this.scene, this.canvas)
-    
+
     // TODO remove later
     new HemisphericLight('light', new Vector3(1, 1, 0), this.scene)
 
@@ -111,8 +111,8 @@ class RenderScene {
       }
 
       if (evt.type === PointerEventTypes.POINTERUP) {
-        if (pointerX === evt.event.clientX &&
-          pointerY === evt.event.clientY) {
+        if (evt.event.movementX === 0 &&
+          evt.event.movementY === 0) {
           const pickingRay = this.scene.createPickingRay(pointerX, pointerY, Matrix.Identity(), this.camera)
           const hitInfo = this.scene.pickWithRay(pickingRay)
           if (hitInfo && hitInfo.hit) {
