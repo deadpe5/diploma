@@ -13,7 +13,7 @@
 
         <v-label class="ml-4 mb-2">Geometry</v-label>
         <v-text-field label="Segments count" variant="solo" class="ml-4 mr-4" v-model="segments"
-            :rules="[v => isValidInt(v, 0) || 'Must be a integer and greater than 0']"></v-text-field>
+            :rules="[v => isValidInt(v, 0, 65) || 'Must be a integer and be 0 < value < 65']"></v-text-field>
 
         <div class="d-flex flex-row">
             <v-btn class="ma-2 justify-start" color="secondary" variant="outlined" :to="{ name: 'addMeshTool' }"
@@ -72,7 +72,6 @@ watch([diameterX, diameterY, diameterZ, segments], (newValues) => {
     visualisationStore.zoomToFitAddMesh()
 })
 
-
 function cancel() {
     visualisationStore.disposeMeshToAdd()
 }
@@ -85,7 +84,7 @@ function confirmButtonDisabled(): boolean {
     return !isValidFloat(diameterX.value.toString()) ||
         !isValidFloat(diameterY.value.toString()) ||
         !isValidFloat(diameterZ.value.toString()) ||
-        !isValidInt(segments.value.toString())
+        !isValidInt(segments.value.toString(), 0, 65)
 }
 
 </script>

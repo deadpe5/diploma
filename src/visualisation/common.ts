@@ -3,7 +3,7 @@ export function isValidFloat(value: string, minValue: number = 0): boolean {
     return !isNaN(number) && (number > minValue)
 }
 
-export function isValidInt(value: string, minValue: number = 0): boolean {
+export function isValidInt(value: string, minValue: number = 0, maxValue: number = Number.MAX_VALUE): boolean {
     const number = Number(value)
-    return !isNaN(number) && (number > minValue) && Number.isInteger(number)
+    return !isNaN(number) && (number > minValue && number < maxValue) && Number.isInteger(number)
 }

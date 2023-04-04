@@ -10,3 +10,16 @@ export interface ISphereOptions {
     diameterZ: number,
     segments: number
 }
+
+export interface ICylinderOptions {
+    diameterTop: number,
+    diameterBottom: number,
+    height: number,
+    segments: number
+}
+
+export interface ITorusOptions {
+    diameter: number,
+    thickness: number,
+    segments: number
+}

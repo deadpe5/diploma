@@ -16,7 +16,7 @@ import { fileTypes } from '../constants'
 import '@babylonjs/loaders/STL'
 import '@babylonjs/loaders/OBJ'
 import '@babylonjs/loaders/glTF'
-import type { IBoxOptions, ISphereOptions } from './types'
+import type { IBoxOptions, ICylinderOptions, ISphereOptions, ITorusOptions } from './types'
 
 export default class MeshManager {
     private readonly scene: Scene
@@ -129,13 +129,45 @@ export default class MeshManager {
         const diameterY = options.diameterY
         const diameterZ = options.diameterZ
         const segments = options.segments
-        console.log(segments)
+
         this.visualisationStore.meshToAdd = MeshBuilder.CreateSphere('sphere',
             {
                 diameterX: diameterX,
                 diameterY: diameterY,
                 diameterZ: diameterZ,
                 segments: segments
+            }, this.scene)
+    }
+
+    public addCylinderToScene(options: ICylinderOptions) {
+        this.disposeMeshToAdd()
+        
+        const diameterTop = options.diameterTop
+        const diameterBottom = options.diameterBottom
+        const height = options.height
+        const segments = options.segments
+
+        this.visualisationStore.meshToAdd = MeshBuilder.CreateCylinder('cylinder', 
+            {
+                diameterTop: diameterTop,
+                diameterBottom: diameterBottom,
+                height: height,
+                tessellation: segments,
+            }, this.scene)
+    }
+
+    public addTorusToScene(options: ITorusOptions) {
+        this.disposeMeshToAdd()
+        
+        const diameter = options.diameter
+        const thickness = options.thickness
+        const segments = options.segments
+
+        this.visualisationStore.meshToAdd = MeshBuilder.CreateTorus('torus', 
+            {
+                diameter: diameter,
+                thickness: thickness,
+                tessellation: segments,
             }, this.scene)
     }
 
