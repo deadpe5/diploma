@@ -16,7 +16,7 @@ import { fileTypes } from '../constants'
 import '@babylonjs/loaders/STL'
 import '@babylonjs/loaders/OBJ'
 import '@babylonjs/loaders/glTF'
-import type { IBoxOptions } from './types'
+import type { IBoxOptions, ISphereOptions } from './types'
 
 export default class MeshManager {
     private readonly scene: Scene
@@ -114,7 +114,29 @@ export default class MeshManager {
         const height = options.height
         const width = options.width
         const depth = options.depth
-        this.visualisationStore.meshToAdd = MeshBuilder.CreateBox('box', { height: height, width: width, depth: depth }, this.scene)
+        this.visualisationStore.meshToAdd = MeshBuilder.CreateBox('box',
+            {
+                height: height, 
+                width: width,
+                depth: depth
+            }, this.scene)
+    }
+
+    public addSphereToScene(options: ISphereOptions) {
+        this.disposeMeshToAdd()
+
+        const diameterX = options.diameterX
+        const diameterY = options.diameterY
+        const diameterZ = options.diameterZ
+        const segments = options.segments
+        console.log(segments)
+        this.visualisationStore.meshToAdd = MeshBuilder.CreateSphere('sphere',
+            {
+                diameterX: diameterX,
+                diameterY: diameterY,
+                diameterZ: diameterZ,
+                segments: segments
+            }, this.scene)
     }
 
     public disposeMeshToAdd() {

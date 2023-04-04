@@ -1,6 +1,6 @@
 import type { fileTypes } from '@/constants'
 import RenderScene from '@/visualisation/RenderScene'
-import type { IBoxOptions } from '@/visualisation/types'
+import type { IBoxOptions, ISphereOptions } from '@/visualisation/types'
 import type { AbstractMesh } from '@babylonjs/core/Meshes'
 import { defineStore } from 'pinia'
 
@@ -94,11 +94,21 @@ export const useVisualisationStore = defineStore('visulisationStore', {
       }
     },
 
+    resetMeshToAdd() {
+      this.meshToAdd = null
+    },
+
     addBoxToScene(options: IBoxOptions) {
       if (this.renderScene) {
         this.renderScene.getMeshManager().addBoxToScene(options)
       }
-    }
+    },
+
+    addSphereToScene(options: ISphereOptions) {
+      if (this.renderScene) {
+        this.renderScene.getMeshManager().addSphereToScene(options)
+      }
+    },
 
   }
 })

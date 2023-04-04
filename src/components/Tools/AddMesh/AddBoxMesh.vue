@@ -5,11 +5,11 @@
     <div class="d-flex flex-column mb-6">
         <v-label class="ml-4 mb-2">Dimensions</v-label>
         <v-text-field label="Height" variant="solo" class="ml-4 mr-4" v-model="height"
-            :rules="[v => isValid(v) || 'Must be a number and greater than 0']"></v-text-field>
+            :rules="[v => isValidFloat(v) || 'Must be a number and greater than 0']"></v-text-field>
         <v-text-field label="Width" variant="solo" class="ml-4 mr-4" v-model="width"
-            :rules="[v => isValid(v) || 'Must be a number and greater than 0']"></v-text-field>
+            :rules="[v => isValidFloat(v) || 'Must be a number and greater than 0']"></v-text-field>
         <v-text-field label="Depth" variant="solo" class="ml-4 mr-4" v-model="depth"
-            :rules="[v => isValid(v) || 'Must be a number and greater than 0']"></v-text-field>
+            :rules="[v => isValidFloat(v) || 'Must be a number and greater than 0']"></v-text-field>
         <div class="d-flex flex-row">
             <v-btn class="ma-2 justify-start" color="secondary" variant="outlined" @click="cancel"
                 :to="{ name: 'addMeshTool' }">
@@ -30,6 +30,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useVisualisationStore } from '@/stores/visualisationStore'
 import type { IBoxOptions } from '@/visualisation/types';
+import { isValidFloat } from '@/visualisation/common'
 
 const height = ref(1)
 const width = ref(1)
@@ -40,22 +41,24 @@ onMounted(() => {
     const options: IBoxOptions = {
         height: height.value,
         width: width.value,
-        depth: depth.value,
+        depth: depth.value
     }
 
     visualisationStore.addBoxToScene(options)
     visualisationStore.zoomToFitAddMesh()
 })
 
-watch([height, width, depth], () => {
+watch([height, width, depth], (newValues) => {
     if (confirmButtonDisabled()) {
         return
     }
 
+    const [height, width, depth] = newValues.map(Number)
+
     const options: IBoxOptions = {
-        height: height.value,
-        width: width.value,
-        depth: depth.value,
+        height: height,
+        width: width,
+        depth: depth
     }
 
     visualisationStore.addBoxToScene(options)
@@ -67,15 +70,13 @@ function cancel() {
 }
 
 function confirm() {
-    visualisationStore.meshToAdd = null
-}
-
-function isValid(value: string): boolean {
-    return !isNaN(Number(value)) && (Number(value) > 0)
+    visualisationStore.resetMeshToAdd()
 }
 
 function confirmButtonDisabled(): boolean {
-    return !isValid(height.value.toString()) || !isValid(width.value.toString()) || !isValid(depth.value.toString())
+    return !isValidFloat(height.value.toString()) ||
+        !isValidFloat(width.value.toString()) || 
+        !isValidFloat(depth.value.toString())
 }
 
 </script>

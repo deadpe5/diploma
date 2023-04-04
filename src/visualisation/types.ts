@@ -3,3 +3,10 @@ export interface IBoxOptions {
     width: number,
     depth: number
 }
+
+export interface ISphereOptions {
+    diameterX: number,
+    diameterY: number,
+    diameterZ: number,
+    segments: number
+}
