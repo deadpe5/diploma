@@ -100,32 +100,33 @@ class RenderScene {
     return this.meshManager
   }
 
+  getGizmoManager(): GizmoManager {
+    return this.gizmoManager
+  }
+
   private addOnPointerObservable() {
     let pointerX = 0
     let pointerY = 0
     this.scene.onPointerObservable.add((evt) => {
       if (evt.type === PointerEventTypes.POINTERDOWN) {
-        pointerX = evt.event.clientX
-        pointerY = evt.event.clientY
+        pointerX = Math.round(evt.event.clientX)
+        pointerY = Math.round(evt.event.clientY)
         return
       }
 
       if (evt.type === PointerEventTypes.POINTERUP) {
-        if (evt.event.movementX === 0 &&
-          evt.event.movementY === 0) {
+        if (Math.round(evt.event.clientX) === pointerX &&
+          Math.round(evt.event.clientY) === pointerY) {
           const pickingRay = this.scene.createPickingRay(pointerX, pointerY, Matrix.Identity(), this.camera)
           const hitInfo = this.scene.pickWithRay(pickingRay)
           if (hitInfo && hitInfo.hit) {
-            this.gizmoManager.attachToMesh(hitInfo.pickedMesh)
-            this.visualisationStore.selectedMesh = hitInfo.pickedMesh
+            this.visualisationStore.select(hitInfo.pickedMesh)
           }
           else if (this.visualisationStore.deselectable) {
-            this.visualisationStore.selectedMesh = null
-            this.gizmoManager.attachToMesh(null)
+            this.visualisationStore.deselect()
           }
         }
       }
-
     })
   }
 }

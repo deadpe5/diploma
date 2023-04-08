@@ -121,5 +121,19 @@ export const useVisualisationStore = defineStore('visulisationStore', {
         this.renderScene.getMeshManager().addTorusToScene(options)
       }
     },
+
+    deselect() {
+      if (this.selectedMesh && this.renderScene) {
+        this.renderScene.getGizmoManager().attachToMesh(null)
+        this.selectedMesh = null
+      }
+    },
+    
+    select(meshToSelect: AbstractMesh | null) {
+      if (meshToSelect && this.renderScene) {
+        this.renderScene.getGizmoManager().attachToMesh(meshToSelect)
+        this.selectedMesh = meshToSelect
+      }
+    }
   }
 })

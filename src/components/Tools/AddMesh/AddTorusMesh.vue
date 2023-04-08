@@ -50,6 +50,7 @@ onMounted(() => {
 
     visualisationStore.addTorusToScene(options)
     visualisationStore.zoomToFitAddMesh()
+    visualisationStore.deselect()
 })
 
 watch([diameter, thickness, segments], (newValues) => {
@@ -66,10 +67,12 @@ watch([diameter, thickness, segments], (newValues) => {
 
     visualisationStore.addTorusToScene(options)
     visualisationStore.zoomToFitAddMesh()
+    visualisationStore.deselect()
 })
 
 function cancel() {
     visualisationStore.disposeMeshToAdd()
+    visualisationStore.deselect()
 }
 
 function confirm() {

@@ -54,6 +54,7 @@ onMounted(() => {
 
     visualisationStore.addCylinderToScene(options)
     visualisationStore.zoomToFitAddMesh()
+    visualisationStore.deselect()
 })
 
 watch([diameterTop, diameterBottom, height, segments], (newValues) => {
@@ -71,10 +72,12 @@ watch([diameterTop, diameterBottom, height, segments], (newValues) => {
 
     visualisationStore.addCylinderToScene(options)
     visualisationStore.zoomToFitAddMesh()
+    visualisationStore.deselect()
 })
 
 function cancel() {
     visualisationStore.disposeMeshToAdd()
+    visualisationStore.deselect()
 }
 
 function confirm() {

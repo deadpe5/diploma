@@ -22,11 +22,16 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue';
 import { fileTypes } from '@/constants';
 import { useVisualisationStore } from '@/stores/visualisationStore';
 
 const visualisationStore = useVisualisationStore()
 let selectedFileFormat: fileTypes
+
+onMounted(() => {
+    visualisationStore.deselect()
+})
 
 function onButtonClick(fileType: fileTypes) {
     const fileUpload = document.getElementById('fileUpload')

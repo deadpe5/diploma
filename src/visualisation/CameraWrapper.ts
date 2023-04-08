@@ -7,6 +7,7 @@ class RenderCamera extends ArcRotateCamera{
   constructor(scene: Scene, canvas: HTMLCanvasElement) {
     super('camera', -Math.PI / 4, Math.PI / 3, 10, Vector3.Zero(), scene)
     this.upVector = new Vector3(0, 0, 1)
+    this.lowerRadiusLimit = 1.618
     this.attachControl(canvas, true)
   }
 

@@ -37,7 +37,7 @@ const width = ref(1)
 const depth = ref(1)
 const visualisationStore = useVisualisationStore()
 
-onMounted(() => {
+onMounted(() => {    
     const options: IBoxOptions = {
         height: height.value,
         width: width.value,
@@ -46,6 +46,7 @@ onMounted(() => {
 
     visualisationStore.addBoxToScene(options)
     visualisationStore.zoomToFitAddMesh()
+    visualisationStore.deselect()
 })
 
 watch([height, width, depth], (newValues) => {
@@ -63,10 +64,12 @@ watch([height, width, depth], (newValues) => {
 
     visualisationStore.addBoxToScene(options)
     visualisationStore.zoomToFitAddMesh()
+    visualisationStore.deselect()
 })
 
 function cancel() {
     visualisationStore.disposeMeshToAdd()
+    visualisationStore.deselect()
 }
 
 function confirm() {

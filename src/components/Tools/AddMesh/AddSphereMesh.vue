@@ -53,6 +53,7 @@ onMounted(() => {
 
     visualisationStore.addSphereToScene(options)
     visualisationStore.zoomToFitAddMesh()
+    visualisationStore.deselect()
 })
 
 watch([diameterX, diameterY, diameterZ, segments], (newValues) => {
@@ -70,10 +71,12 @@ watch([diameterX, diameterY, diameterZ, segments], (newValues) => {
 
     visualisationStore.addSphereToScene(options)
     visualisationStore.zoomToFitAddMesh()
+    visualisationStore.deselect()
 })
 
 function cancel() {
     visualisationStore.disposeMeshToAdd()
+    visualisationStore.deselect()
 }
 
 function confirm() {
