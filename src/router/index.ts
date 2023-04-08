@@ -1,5 +1,10 @@
 import ToolBarNavigation from '@/components/Tools/ToolBarNavigation.vue'
-import AddMeshTool from '@/components/Tools/AddMeshTool.vue'
+import AddMeshTool from '@/components/Tools/AddMesh/AddMeshTool.vue'
+import AddBoxMesh from '@/components/Tools/AddMesh/AddBoxMesh.vue'
+import AddCylinderMesh from '@/components/Tools/AddMesh/AddCylinderMesh.vue'
+import AddCustomMesh from '@/components/Tools/AddMesh/AddCustomMesh.vue'
+import AddSphereMesh from '@/components/Tools/AddMesh/AddSphereMesh.vue'
+import AddTorusMesh from '@/components/Tools/AddMesh/AddTorusMesh.vue'
 import AddFluidTool from '@/components/Tools/AddFluidTool.vue'
 import RotateTool from '@/components/Tools/RotateTool.vue'
 import MoveTool from '@/components/Tools/MoveTool.vue'
@@ -11,6 +16,12 @@ enum RoutesName {
   AddFluidTool = 'addFluidTool',
   RotateTool = 'rotateTool',
   MoveTool = 'moveTool',
+
+  AddBoxMesh = 'addBoxMesh',
+  AddCylinderMesh = 'addCylinderMesh',
+  AddSphereMesh = 'addSphereMesh',
+  AddTorusMesh = 'addTorusMesh',
+  AddCustomMesh = 'addCustomMesh',
 }
 
 enum RoutesPath {
@@ -19,6 +30,12 @@ enum RoutesPath {
   AddFluidTool = '/addFluid',
   RotateTool = '/rotate',
   MoveTool = '/move',
+
+  AddBoxMesh = '/addMesh/addBoxMesh',
+  AddCylinderMesh = '/addMesh/addCylinderMesh',
+  AddSphereMesh = '/addMesh/addSphereMesh',
+  AddTorusMesh = '/addMesh/addTorusMesh',
+  AddCustomMesh = '/addMesh/addCustomMesh',
 }
 
 const router = createRouter({
@@ -47,8 +64,33 @@ const router = createRouter({
     {
       name: RoutesName.AddMeshTool,
       path: RoutesPath.AddMeshTool,
-      component: AddMeshTool
+      component: AddMeshTool,
     },
+    {
+      name: RoutesName.AddBoxMesh,
+      path: RoutesPath.AddBoxMesh,
+      component: AddBoxMesh
+    },
+    {
+      name: RoutesName.AddCylinderMesh,
+      path: RoutesPath.AddCylinderMesh,
+      component: AddCylinderMesh
+    },
+    {
+      name: RoutesName.AddTorusMesh,
+      path: RoutesPath.AddTorusMesh,
+      component: AddTorusMesh
+    },
+    {
+      name: RoutesName.AddSphereMesh,
+      path: RoutesPath.AddSphereMesh,
+      component: AddSphereMesh
+    },
+    {
+      name: RoutesName.AddCustomMesh,
+      path: RoutesPath.AddCustomMesh,
+      component: AddCustomMesh
+    }
   ]
 })
 

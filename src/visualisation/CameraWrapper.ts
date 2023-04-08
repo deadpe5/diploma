@@ -1,10 +1,13 @@
+import { useVisualisationStore } from '@/stores/visualisationStore'
 import { ArcRotateCamera, Vector3, type Scene, Animation, BoundingInfo } from '@babylonjs/core'
 
 class RenderCamera extends ArcRotateCamera{
+  private readonly visualisationStore = useVisualisationStore()
 
   constructor(scene: Scene, canvas: HTMLCanvasElement) {
     super('camera', -Math.PI / 4, Math.PI / 3, 10, Vector3.Zero(), scene)
     this.upVector = new Vector3(0, 0, 1)
+    this.lowerRadiusLimit = 1.618
     this.attachControl(canvas, true)
   }
 
@@ -71,6 +74,27 @@ class RenderCamera extends ArcRotateCamera{
     this.beta = currentBeta
     this.radius = viewRadius
     
+  }
+
+  public zoomToFitAddMesh() {
+    if (!this.visualisationStore.meshToAdd) {
+      return
+    }
+
+    const boundingSphere = this.visualisationStore.meshToAdd.getBoundingInfo().boundingSphere
+    const aspectRatio = this.getScene().getEngine().getAspectRatio(this)
+    let halfMinFov = this.fov / 2
+    if (aspectRatio < 1) {
+      halfMinFov = Math.atan(aspectRatio * Math.tan(halfMinFov))
+    }
+    const viewRadius = Math.abs(boundingSphere.radiusWorld / Math.sin(halfMinFov))
+    const currentAlpha = this.alpha
+    const currentBeta = this.beta
+    
+    this.setTarget(boundingSphere.centerWorld)
+    this.alpha = currentAlpha
+    this.beta = currentBeta
+    this.radius = viewRadius
   }
 }
 

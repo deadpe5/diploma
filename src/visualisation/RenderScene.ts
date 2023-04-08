@@ -2,11 +2,7 @@ import {
   Engine,
   Scene,
   Vector3,
-  MeshBuilder,
-  StandardMaterial,
   Color4,
-  Texture,
-  Vector4,
   HemisphericLight,
   Matrix,
   GizmoManager,
@@ -29,6 +25,7 @@ class RenderScene {
     this.canvas = canvas
     this.engine = new Engine(this.canvas)
     this.scene = new Scene(this.engine)
+    this.scene.useRightHandedSystem = true
     this.gizmoManager = new GizmoManager(this.scene, 2)
     this.gizmoManager.positionGizmoEnabled = true
     this.gizmoManager.rotationGizmoEnabled = true
@@ -38,7 +35,7 @@ class RenderScene {
     this.scene.clearColor = new Color4(1, 1, 1, 1)
 
     this.camera = new RenderCamera(this.scene, this.canvas)
-    
+
     // TODO remove later
     new HemisphericLight('light', new Vector3(1, 1, 0), this.scene)
 
@@ -91,6 +88,10 @@ class RenderScene {
     return this.scene
   }
 
+  getEngine(): Engine {
+    return this.engine
+  }
+
   getActiveCamera(): RenderCamera {
     return this.camera
   }
@@ -99,32 +100,33 @@ class RenderScene {
     return this.meshManager
   }
 
+  getGizmoManager(): GizmoManager {
+    return this.gizmoManager
+  }
+
   private addOnPointerObservable() {
     let pointerX = 0
     let pointerY = 0
     this.scene.onPointerObservable.add((evt) => {
       if (evt.type === PointerEventTypes.POINTERDOWN) {
-        pointerX = evt.event.clientX
-        pointerY = evt.event.clientY
+        pointerX = Math.round(evt.event.clientX)
+        pointerY = Math.round(evt.event.clientY)
         return
       }
 
       if (evt.type === PointerEventTypes.POINTERUP) {
-        if (pointerX === evt.event.clientX &&
-          pointerY === evt.event.clientY) {
+        if (Math.round(evt.event.clientX) === pointerX &&
+          Math.round(evt.event.clientY) === pointerY) {
           const pickingRay = this.scene.createPickingRay(pointerX, pointerY, Matrix.Identity(), this.camera)
           const hitInfo = this.scene.pickWithRay(pickingRay)
           if (hitInfo && hitInfo.hit) {
-            this.gizmoManager.attachToMesh(hitInfo.pickedMesh)
-            this.visualisationStore.selectedMesh = hitInfo.pickedMesh
+            this.visualisationStore.select(hitInfo.pickedMesh)
           }
           else if (this.visualisationStore.deselectable) {
-            this.visualisationStore.selectedMesh = null
-            this.gizmoManager.attachToMesh(null)
+            this.visualisationStore.deselect()
           }
         }
       }
-
     })
   }
 }

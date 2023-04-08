@@ -1,4 +1,6 @@
+import type { fileTypes } from '@/constants'
 import RenderScene from '@/visualisation/RenderScene'
+import type { IBoxOptions, ICylinderOptions, ISphereOptions, ITorusOptions } from '@/visualisation/types'
 import type { AbstractMesh } from '@babylonjs/core/Meshes'
 import { defineStore } from 'pinia'
 
@@ -7,13 +9,28 @@ export const useVisualisationStore = defineStore('visulisationStore', {
     return {
       renderScene: null as RenderScene | null,
       selectedMesh: null as AbstractMesh | null,
-      deselectable: true
+      meshToAdd: null as AbstractMesh | null,
+      deselectable: true,
+      isLoading: false,
+
     }
   },
 
   actions: {
     init(canvas: HTMLCanvasElement) {
       this.renderScene = new RenderScene(canvas)
+    },
+
+    getScene() {
+      if (this.renderScene) {
+        return this.renderScene.getScene()
+      }
+    },
+
+    getEngine() {
+      if (this.renderScene) {
+        return this.renderScene.getEngine()
+      }
     },
 
     rotateCamera(alpha: number, beta: number) {
@@ -31,6 +48,12 @@ export const useVisualisationStore = defineStore('visulisationStore', {
     zoomToFit() {
       if (this.renderScene) {
         this.renderScene.getActiveCamera().zoomToFit()
+      }
+    },
+
+    zoomToFitAddMesh() {
+      if (this.renderScene) {
+        this.renderScene.getActiveCamera().zoomToFitAddMesh()
       }
     },
 
@@ -56,7 +79,61 @@ export const useVisualisationStore = defineStore('visulisationStore', {
       if (this.renderScene) {
         this.renderScene.getMeshManager().rotateSelectedMesh(axis, value, LCS)
       }
-    }
+    },
 
+    importMeshFromFile(fileType: fileTypes, url: string) {
+      if (this.renderScene) {
+        this.renderScene.getMeshManager().importMeshFromFile(fileType, url)
+          .then(() => this.isLoading = false)
+      }
+    },
+
+    disposeMeshToAdd() {
+      if (this.renderScene) {
+        this.renderScene.getMeshManager().disposeMeshToAdd()
+      }
+    },
+
+    resetMeshToAdd() {
+      this.meshToAdd = null
+    },
+
+    addBoxToScene(options: IBoxOptions) {
+      if (this.renderScene) {
+        this.renderScene.getMeshManager().addBoxToScene(options)
+      }
+    },
+
+    addSphereToScene(options: ISphereOptions) {
+      if (this.renderScene) {
+        this.renderScene.getMeshManager().addSphereToScene(options)
+      }
+    },
+
+    addCylinderToScene(options: ICylinderOptions) {
+      if (this.renderScene) {
+        this.renderScene.getMeshManager().addCylinderToScene(options)
+      }
+    },
+
+    addTorusToScene(options: ITorusOptions) {
+      if (this.renderScene) {
+        this.renderScene.getMeshManager().addTorusToScene(options)
+      }
+    },
+
+    deselect() {
+      if (this.selectedMesh && this.renderScene) {
+        this.renderScene.getGizmoManager().attachToMesh(null)
+        this.selectedMesh = null
+      }
+    },
+    
+    select(meshToSelect: AbstractMesh | null) {
+      if (meshToSelect && this.renderScene) {
+        this.renderScene.getGizmoManager().attachToMesh(meshToSelect)
+        this.selectedMesh = meshToSelect
+      }
+    }
   }
 })
