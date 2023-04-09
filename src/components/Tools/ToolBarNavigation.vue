@@ -10,9 +10,9 @@
             Add Mesh
         </v-btn>
 
-        <v-btn class="ma-2 justify-start" color="primary" :to="{ name: 'addFluidTool' }">
+        <v-btn class="ma-2 justify-start" color="primary" :to="{ name: 'fluidSettingsTool' }">
             <v-icon class="v-btn__prepend" icon="mdi-water" />
-            Add Fluid
+            Fluid Simulation Settings
         </v-btn>
 
         <v-btn class="ma-2 justify-start" color="primary" :to="{ name: 'rotateTool' }"
