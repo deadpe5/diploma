@@ -14,9 +14,12 @@
     width: fit-content;
     max-width: fit-content;
     display: flex;
-    margin-left: 10px;
-    margin-top: 20px;
+    margin-left: 20px;
     position: absolute;
+    top: 50%;
+    /* add top property */
+    transform: translateY(-50%);
+    /* add transform property */
 }
 
 .d-flex.flex-column.mb-6 .v-btn__content {

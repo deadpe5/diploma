@@ -5,10 +5,11 @@ import ToolBar from './components/Tools/ToolBar.vue';
 </script>
 
 <template>
-  <HeaderMenu />
-  <BabylonScene />
-  <ToolBar />
+  <v-app>
+    <HeaderMenu />
+    <BabylonScene />
+    <ToolBar />
+  </v-app>
 </template>
 
-<style>
-</style>
+<style></style>
