@@ -11,7 +11,7 @@
         <v-text-field label="Depth" variant="solo" class="ml-4 mr-4" v-model="depth"
             :rules="[v => isValidFloat(v) || 'Must be a number and greater than 0']"></v-text-field>
         <div class="d-flex flex-row">
-            <v-btn class="ma-2 justify-start" color="secondary" variant="outlined" @click="cancel"
+            <v-btn class="ma-2 justify-start" color="secondary" @click="cancel"
                 :to="{ name: 'addMeshTool' }">
                 <v-icon class="v-btn__prepend" icon="mdi-arrow-left" />
                 Cancel

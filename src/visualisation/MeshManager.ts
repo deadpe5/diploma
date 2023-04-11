@@ -18,6 +18,7 @@ import '@babylonjs/loaders/STL'
 import '@babylonjs/loaders/OBJ'
 import '@babylonjs/loaders/glTF'
 import type { IBoxOptions, ICylinderOptions, ISphereOptions, ITorusOptions } from './types'
+import { v4 as uuid } from 'uuid'
 
 export default class MeshManager {
     private readonly scene: Scene
@@ -95,8 +96,10 @@ export default class MeshManager {
             wrap: true
         }
 
-        const box = MeshBuilder.CreateBox('box', options, this.scene)
+        const box = MeshBuilder.CreateBox('Test cube', options, this.scene)
         box.material = material
+        box.id = uuid()
+        this.visualisationStore.sceneItems.push(box)
     }
 
     public async importMeshFromFile(fileType: fileTypes, url: string) {
@@ -117,6 +120,10 @@ export default class MeshManager {
                 mesh.material = this.defaultMaterial
             }
         }
+
+        for (const mesh of result.meshes) {
+            this.visualisationStore.sceneItems.push(mesh)
+        }
     }
 
     public addBoxToScene(options: IBoxOptions) {
@@ -125,7 +132,7 @@ export default class MeshManager {
         const height = options.height
         const width = options.width
         const depth = options.depth
-        const box = MeshBuilder.CreateBox('box',
+        const box = MeshBuilder.CreateBox('Box',
             {
                 height: height,
                 width: width,
@@ -143,7 +150,7 @@ export default class MeshManager {
         const diameterZ = options.diameterZ
         const segments = options.segments
 
-        const sphere = MeshBuilder.CreateSphere('sphere',
+        const sphere = MeshBuilder.CreateSphere('Sphere',
             {
                 diameterX: diameterX,
                 diameterY: diameterY,
@@ -162,7 +169,7 @@ export default class MeshManager {
         const height = options.height
         const segments = options.segments
 
-        const cylinder = MeshBuilder.CreateCylinder('cylinder',
+        const cylinder = MeshBuilder.CreateCylinder('Cylinder',
             {
                 diameterTop: diameterTop,
                 diameterBottom: diameterBottom,
@@ -180,7 +187,7 @@ export default class MeshManager {
         const thickness = options.thickness
         const segments = options.segments
 
-        const torus = MeshBuilder.CreateTorus('torus',
+        const torus = MeshBuilder.CreateTorus('Torus',
             {
                 diameter: diameter,
                 thickness: thickness,

@@ -16,7 +16,7 @@
             :rules="[v => isValidInt(v, 0, 65) || 'Must be a integer and be 0 < value < 65']"></v-text-field>
 
         <div class="d-flex flex-row">
-            <v-btn class="ma-2 justify-start" color="secondary" variant="outlined" :to="{ name: 'addMeshTool' }"
+            <v-btn class="ma-2 justify-start" color="secondary" :to="{ name: 'addMeshTool' }"
                 @click="cancel">
                 <v-icon class="v-btn__prepend" icon="mdi-arrow-left" />
                 Cancel
