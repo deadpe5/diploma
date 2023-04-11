@@ -6,7 +6,9 @@ import {
   HemisphericLight,
   Matrix,
   GizmoManager,
-  PointerEventTypes
+  PointerEventTypes,
+  PointLight,
+  BoundingInfo
 } from '@babylonjs/core'
 import RenderCamera from './CameraWrapper'
 import { useVisualisationStore } from '@/stores/visualisationStore'
@@ -20,6 +22,8 @@ class RenderScene {
   private readonly gizmoManager: GizmoManager
   private readonly meshManager: MeshManager
   private readonly visualisationStore = useVisualisationStore()
+  private readonly sceneLight: HemisphericLight
+  private readonly cameraLight: PointLight
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -36,8 +40,11 @@ class RenderScene {
 
     this.camera = new RenderCamera(this.scene, this.canvas)
 
-    // TODO remove later
-    new HemisphericLight('light', new Vector3(1, 1, 0), this.scene)
+    this.sceneLight = new HemisphericLight('sceneLight', new Vector3(0, 0, 1), this.scene)
+    this.sceneLight.intensity = 0.3
+
+    this.cameraLight = new PointLight('cameraLight', this.camera.position, this.scene)
+    this.cameraLight.intensity = 1
 
     this.meshManager = new MeshManager(this.scene)
     this.meshManager.addTestCube()
