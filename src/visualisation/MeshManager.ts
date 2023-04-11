@@ -10,7 +10,8 @@ import {
     SceneLoader,
     VertexData,
     Mesh,
-    DracoCompression,
+    Color3,
+    DracoCompression
 } from '@babylonjs/core'
 import { fileTypes } from '../constants'
 import '@babylonjs/loaders/STL'
@@ -22,12 +23,20 @@ export default class MeshManager {
     private readonly scene: Scene
     private readonly visualisationStore = useVisualisationStore()
     private readonly axisNameMap: Map<string, Vector3> = new Map<string, Vector3>()
+    private readonly defaultMaterial: StandardMaterial
 
     constructor(scene: Scene) {
         this.scene = scene
         this.axisNameMap.set('X', new Vector3(1, 0, 0))
         this.axisNameMap.set('Y', new Vector3(0, 1, 0))
         this.axisNameMap.set('Z', new Vector3(0, 0, 1))
+
+        this.defaultMaterial = new StandardMaterial('defaultMaterial')
+        this.defaultMaterial.diffuseColor = new Color3(0.7, 0.7, 0.7)
+        this.defaultMaterial.specularColor = Color3.Black()
+        this.defaultMaterial.backFaceCulling = false
+        this.defaultMaterial.sideOrientation = Mesh.DOUBLESIDE
+        this.defaultMaterial.zOffset = 1
 
         DracoCompression.Configuration = {
             decoder: {
@@ -69,7 +78,7 @@ export default class MeshManager {
     }
 
     public addTestCube() {
-        const material = new StandardMaterial('materialForTestCube')
+        const material = this.defaultMaterial.clone('materialForTestCube')
         const texture = new Texture('https://assets.babylonjs.com/environments/numbers.jpg')
         material.diffuseTexture = texture
 
@@ -104,6 +113,8 @@ export default class MeshManager {
                 VertexData.ComputeNormals(positions, indices, normals)
                 vertexData.normals = normals
                 vertexData.applyToMesh(mesh as Mesh)
+
+                mesh.material = this.defaultMaterial
             }
         }
     }
@@ -114,12 +125,14 @@ export default class MeshManager {
         const height = options.height
         const width = options.width
         const depth = options.depth
-        this.visualisationStore.meshToAdd = MeshBuilder.CreateBox('box',
+        const box = MeshBuilder.CreateBox('box',
             {
-                height: height, 
+                height: height,
                 width: width,
                 depth: depth
             }, this.scene)
+        box.material = this.defaultMaterial
+        this.visualisationStore.meshToAdd = box
     }
 
     public addSphereToScene(options: ISphereOptions) {
@@ -130,45 +143,51 @@ export default class MeshManager {
         const diameterZ = options.diameterZ
         const segments = options.segments
 
-        this.visualisationStore.meshToAdd = MeshBuilder.CreateSphere('sphere',
+        const sphere = MeshBuilder.CreateSphere('sphere',
             {
                 diameterX: diameterX,
                 diameterY: diameterY,
                 diameterZ: diameterZ,
                 segments: segments
             }, this.scene)
+        sphere.material = this.defaultMaterial
+        this.visualisationStore.meshToAdd = sphere
     }
 
     public addCylinderToScene(options: ICylinderOptions) {
         this.disposeMeshToAdd()
-        
+
         const diameterTop = options.diameterTop
         const diameterBottom = options.diameterBottom
         const height = options.height
         const segments = options.segments
 
-        this.visualisationStore.meshToAdd = MeshBuilder.CreateCylinder('cylinder', 
+        const cylinder = MeshBuilder.CreateCylinder('cylinder',
             {
                 diameterTop: diameterTop,
                 diameterBottom: diameterBottom,
                 height: height,
                 tessellation: segments,
             }, this.scene)
+        cylinder.material = this.defaultMaterial
+        this.visualisationStore.meshToAdd = cylinder
     }
 
     public addTorusToScene(options: ITorusOptions) {
         this.disposeMeshToAdd()
-        
+
         const diameter = options.diameter
         const thickness = options.thickness
         const segments = options.segments
 
-        this.visualisationStore.meshToAdd = MeshBuilder.CreateTorus('torus', 
+        const torus = MeshBuilder.CreateTorus('torus',
             {
                 diameter: diameter,
                 thickness: thickness,
                 tessellation: segments,
             }, this.scene)
+        torus.material = this.defaultMaterial
+        this.visualisationStore.meshToAdd = torus
     }
 
     public disposeMeshToAdd() {
