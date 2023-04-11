@@ -1,4 +1,4 @@
-import type { fileTypes } from '@/constants'
+import { MESH_DEFAULT_ALPHA, MESH_TOGGLED_ALPHA, type fileTypes } from '@/constants'
 import RenderScene from '@/visualisation/RenderScene'
 import type { IBoxOptions, ICylinderOptions, ISphereOptions, ITorusOptions } from '@/visualisation/types'
 import type { AbstractMesh } from '@babylonjs/core/Meshes'
@@ -12,7 +12,7 @@ export const useVisualisationStore = defineStore('visulisationStore', {
       meshToAdd: null as AbstractMesh | null,
       deselectable: true,
       isLoading: false,
-
+      sceneItems: [] as AbstractMesh[]
     }
   },
 
@@ -95,7 +95,10 @@ export const useVisualisationStore = defineStore('visulisationStore', {
     },
 
     resetMeshToAdd() {
-      this.meshToAdd = null
+      if (this.meshToAdd) {
+        this.sceneItems.push(this.meshToAdd)
+        this.meshToAdd = null
+      }
     },
 
     addBoxToScene(options: IBoxOptions) {
@@ -128,11 +131,17 @@ export const useVisualisationStore = defineStore('visulisationStore', {
         this.selectedMesh = null
       }
     },
-    
+
     select(meshToSelect: AbstractMesh | null) {
       if (meshToSelect && this.renderScene) {
         this.renderScene.getGizmoManager().attachToMesh(meshToSelect)
         this.selectedMesh = meshToSelect
+      }
+    },
+
+    toggleVisibility(item: AbstractMesh) {
+      if (item && item.material) {
+        item.material.alpha = item.material.alpha === MESH_TOGGLED_ALPHA ? MESH_DEFAULT_ALPHA : MESH_TOGGLED_ALPHA
       }
     }
   }

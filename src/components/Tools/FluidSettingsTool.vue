@@ -30,7 +30,7 @@
         <v-select label="Feature" variant="solo" class="ml-4 mr-4"></v-select>
     </v-container>
     <v-container>
-        <v-btn width="100%" color="secondary" variant="outlined" :to="{ name: 'root' }">
+        <v-btn width="100%" color="secondary" :to="{ name: 'root' }">
             Back
         </v-btn>
     </v-container>

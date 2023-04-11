@@ -2,6 +2,7 @@
 import BabylonScene from './components/BabylonScene.vue'
 import HeaderMenu from './components/HeaderMenu.vue'
 import ToolBar from './components/Tools/ToolBar.vue';
+import SideBar from './components/SideBar.vue';
 </script>
 
 <template>
@@ -9,6 +10,7 @@ import ToolBar from './components/Tools/ToolBar.vue';
     <HeaderMenu />
     <BabylonScene />
     <ToolBar />
+    <SideBar />
   </v-app>
 </template>
 
