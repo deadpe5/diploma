@@ -117,11 +117,12 @@ export default class MeshManager {
                 vertexData.normals = normals
                 vertexData.applyToMesh(mesh as Mesh)
 
-                mesh.material = this.defaultMaterial
+                mesh.material = this.defaultMaterial.clone('STLMaterial')
             }
         }
 
         for (const mesh of result.meshes) {
+            mesh.id = uuid()
             this.visualisationStore.sceneItems.push(mesh)
         }
     }
@@ -138,7 +139,8 @@ export default class MeshManager {
                 width: width,
                 depth: depth
             }, this.scene)
-        box.material = this.defaultMaterial
+        box.id = uuid()
+        box.material = this.defaultMaterial.clone('BoxMaterial')
         this.visualisationStore.meshToAdd = box
     }
 
@@ -157,7 +159,8 @@ export default class MeshManager {
                 diameterZ: diameterZ,
                 segments: segments
             }, this.scene)
-        sphere.material = this.defaultMaterial
+        sphere.id = uuid()
+        sphere.material = this.defaultMaterial.clone('SphereMaterial')
         this.visualisationStore.meshToAdd = sphere
     }
 
@@ -176,7 +179,8 @@ export default class MeshManager {
                 height: height,
                 tessellation: segments,
             }, this.scene)
-        cylinder.material = this.defaultMaterial
+        cylinder.id = uuid()
+        cylinder.material = this.defaultMaterial.clone('CylinderMaterial')
         this.visualisationStore.meshToAdd = cylinder
     }
 
@@ -193,7 +197,8 @@ export default class MeshManager {
                 thickness: thickness,
                 tessellation: segments,
             }, this.scene)
-        torus.material = this.defaultMaterial
+        torus.id = uuid()
+        torus.material = this.defaultMaterial.clone('TorusMaterial')
         this.visualisationStore.meshToAdd = torus
     }
 

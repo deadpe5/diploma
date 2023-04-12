@@ -143,6 +143,16 @@ export const useVisualisationStore = defineStore('visulisationStore', {
       if (item && item.material) {
         item.material.alpha = item.material.alpha === MESH_TOGGLED_ALPHA ? MESH_DEFAULT_ALPHA : MESH_TOGGLED_ALPHA
       }
+    },
+
+    removeSelectedSceneItem() {
+      if (this.selectedMesh) {
+        const selectedMeshId = this.selectedMesh.id
+        const newArray = this.sceneItems.filter(item => item.id !== selectedMeshId)
+        this.sceneItems = newArray
+        this.selectedMesh.dispose()
+        this.deselect()
+      }
     }
   }
 })
