@@ -16,11 +16,11 @@ import * as directives from 'vuetify/directives'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCube, faExpand } from '@fortawesome/free-solid-svg-icons'
+import { faCube, faExpand, faCircleXmark } from '@fortawesome/free-solid-svg-icons'
 import '@mdi/font/css/materialdesignicons.css'
 import './assets/main.css'
 
-library.add(faCube, faExpand,)
+library.add(faCube, faExpand, faCircleXmark)
 
 const pinia = createPinia()
 const vuetify = createVuetify({

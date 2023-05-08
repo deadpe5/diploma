@@ -24,18 +24,6 @@ export const useVisualisationStore = defineStore('visulisationStore', {
       this.renderScene = new RenderScene(canvas)
     },
 
-    getScene() {
-      if (this.renderScene) {
-        return this.renderScene.getScene()
-      }
-    },
-
-    getEngine() {
-      if (this.renderScene) {
-        return this.renderScene.getEngine()
-      }
-    },
-
     rotateCamera(alpha: number, beta: number) {
       if (this.renderScene) {
         this.renderScene.getActiveCamera().rotateCamera(alpha, beta)
