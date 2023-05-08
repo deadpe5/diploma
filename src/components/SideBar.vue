@@ -3,7 +3,8 @@
         <v-card min-width="300px" elevation="2">
             <div class="d-flex flex-row justify-space-between">
                 <v-card-title>Mesh list</v-card-title>
-                <v-btn :icon="'mdi-delete'" variant="text" @click="dialog = true" :disabled="visualisationStore.selectedMesh === null" />
+                <v-btn :icon="'mdi-delete'" variant="text" @click="dialog = true"
+                    :disabled="visualisationStore.selectedMesh === null" />
                 <v-dialog v-model="dialog" width="auto">
                     <v-card>
                         <v-card-text>
@@ -34,11 +35,27 @@
             <v-divider></v-divider>
             <v-card-title>Fluid properties</v-card-title>
             <v-container class="padding">
-                <v-checkbox label="Check box bounds"></v-checkbox>
+                <v-checkbox label="Check box bounds" hide-details></v-checkbox>
+                <v-checkbox label="Auto rotate box" hide-details></v-checkbox>
                 <v-label>Fluid color & transparency</v-label>
                 <v-color-picker v-model="fluidColor" hide-canvas hide-inputs></v-color-picker>
                 <v-label class="mt-4">Particle count</v-label>
-                <v-slider thumb-label></v-slider>
+                <v-slider thumb-label :min="MIN_PARTICLES_COUNT" :max="MAX_PARTICLES_COUNT" :step="PARTICLES_COUNT_STEP"
+                    @mouseover="onMouseEnter" v-model="particleCount">
+                    <template v-slot:append>
+                        <v-text-field v-model="particleCount" type="number" style="width: 100px" density="compact"
+                            hide-details :rules="rules" variant="outlined"></v-text-field>
+                    </template>
+                </v-slider>
+                <v-snackbar v-model="snackbar" :timeout="timeout" color="red-accent-4">
+                    {{ errorMsg }}
+                    <template v-slot:actions>
+                        <v-btn color="white" @click="snackbar = false">
+                            <font-awesome-icon icon="fa-solid fa-circle-xmark" size="2xl" />
+                        </v-btn>
+                    </template>
+                </v-snackbar>
+
                 <v-btn width="100%" class="mb-4" color="secondary">Pause</v-btn>
                 <v-btn width="100%" color="primary">Restart</v-btn>
             </v-container>
@@ -46,11 +63,38 @@
     </div>
 </template>
 <script setup lang="ts">
-import { ref } from 'vue';
+
+import { ref, watch } from 'vue';
 import { useVisualisationStore } from '@/stores/visualisationStore';
 import type { AbstractMesh } from '@babylonjs/core';
+import { MIN_PARTICLES_COUNT, MAX_PARTICLES_COUNT, PARTICLES_COUNT_STEP } from '../constants'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
+const snackbar = ref(false)
+const timeout = ref(2000)
 const dialog = ref(false)
+const errorMsg = ref(null)
+const particleCount = ref((MIN_PARTICLES_COUNT + MAX_PARTICLES_COUNT) / 2)
+
+const rules = [
+    (v) => Number(v) && Number.isInteger(Number(v)) || 'Particle count must be an integer',
+    (v) => v >= MIN_PARTICLES_COUNT || `Particle count must be greater than ${MIN_PARTICLES_COUNT}`,
+    (v) => v <= MAX_PARTICLES_COUNT || `Particle count must be lower than ${MAX_PARTICLES_COUNT}`,
+]
+
+watch(particleCount, () => {
+    errorMsg.value = null
+    snackbar.value = false
+    for (let i = 0; i < rules.length; i++) {
+        const rule = rules[i]
+        const result = rule(particleCount.value)
+        if (typeof result === 'string') {
+            errorMsg.value = result
+            snackbar.value = true
+            break
+        }
+    }
+})
 
 const fluidColor = ref('#00E5FF')
 const visualisationStore = useVisualisationStore()
@@ -66,6 +110,12 @@ function toggleVisibility(item: AbstractMesh) {
 function removeItem() {
     dialog.value = false
     visualisationStore.removeSelectedSceneItem()
+}
+
+function onMouseEnter() {
+    if (errorMsg.value) {
+        snackbar.value = true
+    }
 }
 
 </script>

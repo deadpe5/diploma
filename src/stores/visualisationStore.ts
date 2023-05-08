@@ -15,22 +15,10 @@ export const useVisualisationStore = defineStore('visulisationStore', {
       sceneItems: [] as AbstractMesh[]
     }
   },
-
+  
   actions: {
     init(canvas: HTMLCanvasElement) {
       this.renderScene = new RenderScene(canvas)
-    },
-
-    getScene() {
-      if (this.renderScene) {
-        return this.renderScene.getScene()
-      }
-    },
-
-    getEngine() {
-      if (this.renderScene) {
-        return this.renderScene.getEngine()
-      }
     },
 
     rotateCamera(alpha: number, beta: number) {
