@@ -143,34 +143,34 @@ const errorMsgs = ref(['', '', '', '', ''])
 
 const rules = [
     [
-        (v) => !isNaN(Number(v)) || 'Particle size must be a number',
-        (v) => v >= MIN_PARTICLE_SIZE || `Particle size must be greater than ${MIN_PARTICLE_SIZE}`,
-        (v) => v <= MAX_PARTICLE_SIZE || `Particle size must be lower than ${MAX_PARTICLE_SIZE}`,
+        (v: string | number) => !isNaN(Number(v)) || 'Particle size must be a number',
+        (v: string | number) => Number(v) >= MIN_PARTICLE_SIZE || `Particle size must be greater than ${MIN_PARTICLE_SIZE}`,
+        (v: string | number) => Number(v) <= MAX_PARTICLE_SIZE || `Particle size must be lower than ${MAX_PARTICLE_SIZE}`,
     ],
     [
-        (v) => !isNaN(Number(v)) || 'Smoothing radius must be a number',
-        (v) => v >= MIN_SMOOTHING_RADIUS || `Smoothing radius must be greater than ${MIN_SMOOTHING_RADIUS}`,
-        (v) => v <= MAX_SMOOTHING_RADIUS || `Smoothing radius must be lower than ${MAX_SMOOTHING_RADIUS}`
+        (v: string | number) => !isNaN(Number(v)) || 'Smoothing radius must be a number',
+        (v: string | number) => Number(v) >= MIN_SMOOTHING_RADIUS || `Smoothing radius must be greater than ${MIN_SMOOTHING_RADIUS}`,
+        (v: string | number) => Number(v) <= MAX_SMOOTHING_RADIUS || `Smoothing radius must be lower than ${MAX_SMOOTHING_RADIUS}`
     ],
     [
-        (v) => (!isNaN(Number(v)) && Number.isInteger(Number(v))) || 'Fluid density must be an integer',
-        (v) => v >= MIN_FLUID_DENSITY || `Fluid density must be greater than ${MIN_FLUID_DENSITY}`,
-        (v) => v <= MAX_FLUID_DENSITY || `Fluid density must be lower than ${MAX_FLUID_DENSITY}`
+        (v: string | number) => (!isNaN(Number(v)) && Number.isInteger(Number(v))) || 'Fluid density must be an integer',
+        (v: string | number) => Number(v) >= MIN_FLUID_DENSITY || `Fluid density must be greater than ${MIN_FLUID_DENSITY}`,
+        (v: string | number) => Number(v) <= MAX_FLUID_DENSITY || `Fluid density must be lower than ${MAX_FLUID_DENSITY}`
     ],
     [
-        (v) => (!isNaN(Number(v)) && Number.isInteger(Number(v))) || 'Fluid velocity must be an integer',
-        (v) => v >= MIN_PREASURE_CONSTANT || `Preasure constant must be greater than ${MIN_PREASURE_CONSTANT}`,
-        (v) => v <= MAX_PREASURE_CONSTANT || `Preasure constant must be lower than ${MAX_PREASURE_CONSTANT}`
+        (v: string | number) => (!isNaN(Number(v)) && Number.isInteger(Number(v))) || 'Fluid velocity must be an integer',
+        (v: string | number) => Number(v) >= MIN_PREASURE_CONSTANT || `Preasure constant must be greater than ${MIN_PREASURE_CONSTANT}`,
+        (v: string | number) => Number(v) <= MAX_PREASURE_CONSTANT || `Preasure constant must be lower than ${MAX_PREASURE_CONSTANT}`
     ],
     [
-        (v) => (!isNaN(Number(v)) && Number.isInteger(Number(v))) || 'Fluid velocity must be an integer',
-        (v) => v >= MIN_FLUID_VELOCITY || `Fluid velocity must be greater than ${MIN_FLUID_VELOCITY}`,
-        (v) => v <= MAX_FLUID_VELOCITY || `Fluid velocity must be lower than ${MAX_FLUID_VELOCITY}`
+        (v: string | number) => (!isNaN(Number(v)) && Number.isInteger(Number(v))) || 'Fluid velocity must be an integer',
+        (v: string | number) => Number(v) >= MIN_FLUID_VELOCITY || `Fluid velocity must be greater than ${MIN_FLUID_VELOCITY}`,
+        (v: string | number) => Number(v) <= MAX_FLUID_VELOCITY || `Fluid velocity must be lower than ${MAX_FLUID_VELOCITY}`
     ]
 ]
 
 watch(particleSize, () => {
-    errorMsgs.value[0] = null
+    errorMsgs.value[0] = ''
     snackbars.value[0] = false
     const rulesSet = rules[0]
     for (let i = 0; i < rulesSet.length; i++) {
@@ -185,7 +185,7 @@ watch(particleSize, () => {
 })
 
 watch(smoothingRadius, () => {
-    errorMsgs.value[1] = null
+    errorMsgs.value[1] = ''
     snackbars.value[1] = false
     const rulesSet = rules[1]
     for (let i = 0; i < rulesSet.length; i++) {
@@ -200,7 +200,7 @@ watch(smoothingRadius, () => {
 })
 
 watch(fluidDensity, () => {
-    errorMsgs.value[2] = null
+    errorMsgs.value[2] = ''
     snackbars.value[2] = false
     const rulesSet = rules[2]
     for (let i = 0; i < rulesSet.length; i++) {
@@ -215,7 +215,7 @@ watch(fluidDensity, () => {
 })
 
 watch(preasureConstant, () => {
-    errorMsgs.value[3] = null
+    errorMsgs.value[3] = ''
     snackbars.value[3] = false
     const rulesSet = rules[3]
     for (let i = 0; i < rulesSet.length; i++) {
@@ -230,7 +230,7 @@ watch(preasureConstant, () => {
 })
 
 watch(fluidVelocity, () => {
-    errorMsgs.value[4] = null
+    errorMsgs.value[4] = ''
     snackbars.value[4] = false
     const rulesSet = rules[4]
     for (let i = 0; i < rulesSet.length; i++) {
@@ -245,7 +245,7 @@ watch(fluidVelocity, () => {
 })
 
 function onMouseEnter(index: number) {
-    if (errorMsgs.value[index]) {
+    if (errorMsgs.value[index] !== '') {
         snackbars.value[index] = true
     }
 }

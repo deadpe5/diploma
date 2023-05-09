@@ -35,8 +35,8 @@
             <v-divider></v-divider>
             <v-card-title>Fluid properties</v-card-title>
             <v-container class="padding">
-                <v-checkbox label="Check box bounds" hide-details></v-checkbox>
-                <v-checkbox label="Auto rotate box" hide-details></v-checkbox>
+                <v-checkbox label="Check box bounds" hide-details v-model="checkBounds"></v-checkbox>
+                <v-checkbox label="Auto rotate box" hide-details v-model="autoRotateBox" :disabled="!checkBounds"></v-checkbox>
                 <v-label>Fluid color & transparency</v-label>
                 <v-color-picker v-model="fluidColor" hide-canvas hide-inputs></v-color-picker>
                 <v-label class="mt-4">Particle count</v-label>
@@ -70,20 +70,22 @@ import type { AbstractMesh } from '@babylonjs/core';
 import { MIN_PARTICLES_COUNT, MAX_PARTICLES_COUNT, PARTICLES_COUNT_STEP } from '../constants'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
+const autoRotateBox = ref(false)
+const checkBounds = ref(true)
 const snackbar = ref(false)
 const timeout = ref(2000)
 const dialog = ref(false)
-const errorMsg = ref(null)
+const errorMsg = ref('')
 const particleCount = ref((MIN_PARTICLES_COUNT + MAX_PARTICLES_COUNT) / 2)
 
 const rules = [
-    (v) => Number(v) && Number.isInteger(Number(v)) || 'Particle count must be an integer',
-    (v) => v >= MIN_PARTICLES_COUNT || `Particle count must be greater than ${MIN_PARTICLES_COUNT}`,
-    (v) => v <= MAX_PARTICLES_COUNT || `Particle count must be lower than ${MAX_PARTICLES_COUNT}`,
+    (v: string | number) => Number(v) && Number.isInteger(Number(v)) || 'Particle count must be an integer',
+    (v: string | number) => Number(v) >= MIN_PARTICLES_COUNT || `Particle count must be greater than ${MIN_PARTICLES_COUNT}`,
+    (v: string | number) => Number(v) <= MAX_PARTICLES_COUNT || `Particle count must be lower than ${MAX_PARTICLES_COUNT}`,
 ]
 
 watch(particleCount, () => {
-    errorMsg.value = null
+    errorMsg.value = ''
     snackbar.value = false
     for (let i = 0; i < rules.length; i++) {
         const rule = rules[i]
@@ -93,6 +95,18 @@ watch(particleCount, () => {
             snackbar.value = true
             break
         }
+    }
+})
+
+watch(autoRotateBox, isActive => {
+    visualisationStore.autoRotateBox(isActive)
+})
+
+watch(checkBounds, isActive => {
+    visualisationStore.checkBounds(isActive)
+
+    if (autoRotateBox.value) {
+        autoRotateBox.value = false
     }
 })
 
@@ -113,7 +127,7 @@ function removeItem() {
 }
 
 function onMouseEnter() {
-    if (errorMsg.value) {
+    if (errorMsg.value !== '') {
         snackbar.value = true
     }
 }

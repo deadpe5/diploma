@@ -29,7 +29,7 @@ export const useVisualisationStore = defineStore('visulisationStore', {
 
     changeView(view: string) {
       if (this.renderScene) {
-        this.renderScene.changView(view)
+        this.renderScene.changeView(view)
       }
     },
 
@@ -140,6 +140,18 @@ export const useVisualisationStore = defineStore('visulisationStore', {
         this.sceneItems = newArray
         this.selectedMesh.dispose()
         this.deselect()
+      }
+    },
+
+    autoRotateBox(isActive: boolean) {
+      if (this.renderScene) {
+        this.renderScene.getFluidVisualisation.onAutoRotate(isActive)
+      }
+    },
+
+    checkBounds(isActive: boolean) {
+      if (this.renderScene) {
+        this.renderScene.getFluidVisualisation.onCheckBounds(isActive)
       }
     }
   }
