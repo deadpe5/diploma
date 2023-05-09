@@ -9,10 +9,12 @@ import {
   PointerEventTypes,
   PointLight,
   KeyboardEventTypes,
+  CubeTexture,
 } from '@babylonjs/core'
 import RenderCamera from './CameraWrapper'
 import { useVisualisationStore } from '@/stores/visualisationStore'
 import MeshManager from './MeshManager'
+import { FluidVisualisation } from './FluidVisualisation'
 
 class RenderScene {
   private readonly canvas: HTMLCanvasElement
@@ -24,12 +26,14 @@ class RenderScene {
   private readonly visualisationStore = useVisualisationStore()
   private readonly sceneLight: HemisphericLight
   private readonly cameraLight: PointLight
+  private readonly fluidVisualisation: FluidVisualisation
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
     this.engine = new Engine(this.canvas)
     this.scene = new Scene(this.engine)
     this.scene.useRightHandedSystem = true
+    this.setEnvironment()
     this.gizmoManager = new GizmoManager(this.scene, 2)
     this.gizmoManager.positionGizmoEnabled = true
     this.gizmoManager.rotationGizmoEnabled = true
@@ -47,7 +51,12 @@ class RenderScene {
     this.cameraLight.intensity = 1
 
     this.meshManager = new MeshManager(this.scene)
-    this.meshManager.addTestCube()
+
+    this.fluidVisualisation = new FluidVisualisation(this)
+    this.fluidVisualisation.run()
+    this.scene.onDisposeObservable.add(() => {
+      this.fluidVisualisation.dispose()
+    })
 
     this.engine.runRenderLoop(() => {
       const fps = this.engine.getFps()
@@ -72,7 +81,11 @@ class RenderScene {
     this.addOnPointerObservable()
   }
 
-  changView(view: string) {
+  public get getFluidVisualisation() {
+    return this.fluidVisualisation
+  }
+
+  changeView(view: string) {
     const PI = Math.PI
     switch (view) {
       case '+X':
@@ -99,6 +112,14 @@ class RenderScene {
     }
   }
 
+  setEnvironment() {
+    this.scene.environmentTexture =
+      CubeTexture.CreateFromPrefilteredData("https://playground.babylonjs.com/textures/country.env", this.scene);
+
+    const skybox = this.scene.createDefaultSkybox(this.scene.environmentTexture);
+    skybox!.rotation.x = Math.PI / 2
+  }
+  
   getScene(): Scene {
     return this.scene
   }

@@ -51,10 +51,15 @@ class RenderCamera extends ArcRotateCamera{
     let maxVec = new Vector3(-Infinity, -Infinity, -Infinity);
     let minVec = new Vector3(Infinity, Infinity, Infinity);
 
-    for (const mesh of this.getScene().meshes) {
-      const meshBoundingBox = mesh.getBoundingInfo().boundingBox
-      minVec = Vector3.Minimize(meshBoundingBox.minimumWorld, minVec)
-      maxVec = Vector3.Maximize(meshBoundingBox.maximumWorld, maxVec)
+    if (this.visualisationStore.sceneItems.length !== 0) {
+      for (const mesh of this.visualisationStore.sceneItems) {
+        const meshBoundingBox = mesh.getBoundingInfo().boundingBox
+        minVec = Vector3.Minimize(meshBoundingBox.minimumWorld, minVec)
+        maxVec = Vector3.Maximize(meshBoundingBox.maximumWorld, maxVec)
+      }
+    } else {
+      minVec = Vector3.One().scale(-1)
+      maxVec = Vector3.One()
     }
 
     const sceneBoundingInfo = new BoundingInfo(minVec, maxVec)
