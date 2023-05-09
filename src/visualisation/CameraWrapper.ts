@@ -9,6 +9,7 @@ class RenderCamera extends ArcRotateCamera{
     this.upVector = new Vector3(0, 0, 1)
     this.lowerRadiusLimit = 1.618
     this.attachControl(canvas, true)
+    this.inputs.remove(this.inputs.attached.keyboard);
   }
 
   public rotateCamera(alpha: number, beta: number) {

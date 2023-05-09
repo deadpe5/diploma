@@ -30,3 +30,20 @@ export const PREASURE_CONSTANT_STEP = 1
 export const MIN_FLUID_VELOCITY = 0
 export const MAX_FLUID_VELOCITY = 20
 export const FLUID_VELOCITY_STEP = 1
+
+export const MIN_BOX_OPACITY = 0
+export const MAX_BOX_OPACITY = 1
+export const BOX_OPACITY_STEP = 0.01
+export const DEFAULT_BOX_OPACITY = 0.2
+
+export const ENVIRONMENT_NAMES = [
+    "Country",
+    "Night",
+    "Canyon",
+]
+
+export const ENVIRONMENT_FILENAMES = [
+    "country.env",
+    "night.env",
+    "Runyon_Canyon_A_2k_cube_specular.env",
+];

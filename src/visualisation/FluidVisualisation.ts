@@ -14,6 +14,7 @@ import {
     Nullable
 } from "@babylonjs/core";
 import RenderScene from "./RenderScene";
+import { DEFAULT_BOX_OPACITY } from "@/constants";
 
 // TODO: in constuctor add FluidSimulatiom class
 export class FluidVisualisation {
@@ -45,8 +46,8 @@ export class FluidVisualisation {
 
     constructor(renderScene: RenderScene) {
         this.renderScene = renderScene
-        this.scene = renderScene.getScene()
-        this.engine = renderScene.getEngine()
+        this.scene = renderScene.scene
+        this.engine = renderScene.engine
         this.sceneRenderObserver = null as any
         this.sceneKeyboardObserver = null as any
 
@@ -76,12 +77,16 @@ export class FluidVisualisation {
         this.prevTransform = Matrix.Identity()
     }
 
+    set boxOpacity(value: number) {
+        this.boxMaterial.alpha = value
+    }
+
     run() {
         // Box mesh
         this.boxMaterial = new PBRMaterial('boxMeshMat', this.scene)
         this.boxMaterial.metallic = 0.3
         this.boxMaterial.roughness = 0
-        this.boxMaterial.alpha = 0.2
+        this.boxMaterial.alpha = DEFAULT_BOX_OPACITY
         this.boxMaterial.backFaceCulling = true
         this.boxMaterial.cullBackFaces = false
         this.boxMaterialFront = this.boxMaterial.clone('boxMeshFrontMat')
@@ -110,30 +115,30 @@ export class FluidVisualisation {
         this.sceneKeyboardObserver = this.scene.onKeyboardObservable.add(keyboardInfo => {
             switch (keyboardInfo.type) {
                 case KeyboardEventTypes.KEYDOWN:
-                    if (keyboardInfo.event.type === 'ArrowLeft') {
+                    if (keyboardInfo.event.code === 'ArrowLeft') {
                         arrowLeftDown = true
                     }
-                    if (keyboardInfo.event.type === 'ArrowRight') {
+                    if (keyboardInfo.event.code === 'ArrowRight') {
                         arrowRightDown = true
                     }
-                    if (keyboardInfo.event.type === 'ArrowUp') {
+                    if (keyboardInfo.event.code === 'ArrowUp') {
                         arrowUpDown = true
                     }
-                    if (keyboardInfo.event.type === 'ArrowDown') {
+                    if (keyboardInfo.event.code === 'ArrowDown') {
                         arrowDownDown = true
                     }
                     break
                 case KeyboardEventTypes.KEYUP:
-                    if (keyboardInfo.event.type === 'ArrowLeft') {
+                    if (keyboardInfo.event.code === 'ArrowLeft') {
                         arrowLeftDown = false
                     }
-                    if (keyboardInfo.event.type === 'ArrowRight') {
+                    if (keyboardInfo.event.code === 'ArrowRight') {
                         arrowRightDown = false
                     }
-                    if (keyboardInfo.event.type === 'ArrowUp') {
+                    if (keyboardInfo.event.code === 'ArrowUp') {
                         arrowUpDown = false
                     }
-                    if (keyboardInfo.event.type === 'ArrowDown') {
+                    if (keyboardInfo.event.code === 'ArrowDown') {
                         arrowDownDown = false
                     }
                     break
@@ -217,6 +222,14 @@ export class FluidVisualisation {
         if (value) {
             this.autoRotateBox = false
         }
+    }
+
+    public restart() {
+        this.angleX = 0
+        this.angleY = 0
+        this.autoRotateBox = false
+        this.rotateMeshes(0, 0)
+        // generate particles
     }
 
     public onAutoRotate(value: boolean) {

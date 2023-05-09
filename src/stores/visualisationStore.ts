@@ -12,10 +12,11 @@ export const useVisualisationStore = defineStore('visulisationStore', {
       meshToAdd: null as AbstractMesh | null,
       deselectable: true,
       isLoading: false,
+      isPaused: false,
       sceneItems: [] as AbstractMesh[]
     }
   },
-  
+
   actions: {
     init(canvas: HTMLCanvasElement) {
       this.renderScene = new RenderScene(canvas)
@@ -23,7 +24,7 @@ export const useVisualisationStore = defineStore('visulisationStore', {
 
     rotateCamera(alpha: number, beta: number) {
       if (this.renderScene) {
-        this.renderScene.getActiveCamera().rotateCamera(alpha, beta)
+        this.renderScene.activeCamera.rotateCamera(alpha, beta)
       }
     },
 
@@ -35,50 +36,50 @@ export const useVisualisationStore = defineStore('visulisationStore', {
 
     zoomToFit() {
       if (this.renderScene) {
-        this.renderScene.getActiveCamera().zoomToFit()
+        this.renderScene.activeCamera.zoomToFit()
       }
     },
 
     zoomToFitAddMesh() {
       if (this.renderScene) {
-        this.renderScene.getActiveCamera().zoomToFitAddMesh()
+        this.renderScene.activeCamera.zoomToFitAddMesh()
       }
     },
 
     recenterSelectedMesh() {
       if (this.renderScene) {
-        this.renderScene.getMeshManager().recenterSelectedMesh()
+        this.renderScene.meshManager.recenterSelectedMesh()
       }
     },
 
     moveSelectedMesh(axis: string, value: number, LCS: boolean) {
       if (this.renderScene) {
-        this.renderScene.getMeshManager().moveSelectedMesh(axis, value, LCS)
+        this.renderScene.meshManager.moveSelectedMesh(axis, value, LCS)
       }
     },
 
     restoreSelectedMeshRotation() {
       if (this.renderScene) {
-        this.renderScene.getMeshManager().restoreSelectedMeshRotation()
+        this.renderScene.meshManager.restoreSelectedMeshRotation()
       }
     },
 
     rotateSelectedMesh(axis: string, value: number, LCS: boolean) {
       if (this.renderScene) {
-        this.renderScene.getMeshManager().rotateSelectedMesh(axis, value, LCS)
+        this.renderScene.meshManager.rotateSelectedMesh(axis, value, LCS)
       }
     },
 
     importMeshFromFile(fileType: fileTypes, url: string) {
       if (this.renderScene) {
-        this.renderScene.getMeshManager().importMeshFromFile(fileType, url)
+        this.renderScene.meshManager.importMeshFromFile(fileType, url)
           .then(() => this.isLoading = false)
       }
     },
 
     disposeMeshToAdd() {
       if (this.renderScene) {
-        this.renderScene.getMeshManager().disposeMeshToAdd()
+        this.renderScene.meshManager.disposeMeshToAdd()
       }
     },
 
@@ -91,38 +92,38 @@ export const useVisualisationStore = defineStore('visulisationStore', {
 
     addBoxToScene(options: IBoxOptions) {
       if (this.renderScene) {
-        this.renderScene.getMeshManager().addBoxToScene(options)
+        this.renderScene.meshManager.addBoxToScene(options)
       }
     },
 
     addSphereToScene(options: ISphereOptions) {
       if (this.renderScene) {
-        this.renderScene.getMeshManager().addSphereToScene(options)
+        this.renderScene.meshManager.addSphereToScene(options)
       }
     },
 
     addCylinderToScene(options: ICylinderOptions) {
       if (this.renderScene) {
-        this.renderScene.getMeshManager().addCylinderToScene(options)
+        this.renderScene.meshManager.addCylinderToScene(options)
       }
     },
 
     addTorusToScene(options: ITorusOptions) {
       if (this.renderScene) {
-        this.renderScene.getMeshManager().addTorusToScene(options)
+        this.renderScene.meshManager.addTorusToScene(options)
       }
     },
 
     deselect() {
       if (this.selectedMesh && this.renderScene) {
-        this.renderScene.getGizmoManager().attachToMesh(null)
+        this.renderScene.gizmoManager.attachToMesh(null)
         this.selectedMesh = null
       }
     },
 
     select(meshToSelect: AbstractMesh | null) {
       if (meshToSelect && this.renderScene) {
-        this.renderScene.getGizmoManager().attachToMesh(meshToSelect)
+        this.renderScene.gizmoManager.attachToMesh(meshToSelect)
         this.selectedMesh = meshToSelect
       }
     },
@@ -143,15 +144,40 @@ export const useVisualisationStore = defineStore('visulisationStore', {
       }
     },
 
-    autoRotateBox(isActive: boolean) {
+    enableAutoRotateBox(isActive: boolean) {
       if (this.renderScene) {
-        this.renderScene.getFluidVisualisation.onAutoRotate(isActive)
+        this.renderScene.fluidVisualisation.onAutoRotate(isActive)
       }
     },
 
     checkBounds(isActive: boolean) {
       if (this.renderScene) {
-        this.renderScene.getFluidVisualisation.onCheckBounds(isActive)
+        this.renderScene.fluidVisualisation.onCheckBounds(isActive)
+      }
+    },
+
+    changeBoxOpacity(value: number) {
+      if (this.renderScene) {
+        this.renderScene.fluidVisualisation.boxOpacity = value
+      }
+    },
+
+    changeEnvironment(value: string) {
+      if (this.renderScene) {
+        this.renderScene.setEnvironment(value)
+      }
+    },
+
+    pauseSimulation() {
+      if (this.renderScene) {
+        this.isPaused = !this.isPaused
+        this.renderScene.fluidVisualisation.onPaused(this.isPaused)
+      }
+    },
+
+    restartSimulation() {
+      if (this.renderScene) {
+        this.renderScene.fluidVisualisation.restart()
       }
     }
   }
