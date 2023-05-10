@@ -11,28 +11,28 @@
         <v-tooltip activator="parent" location="bottom" text="-X" />
       </v-btn>
 
-      <v-btn rounded="lg" size="small" icon @click="changeView('+Y')" color="primary">
-        <font-awesome-icon icon="fa-solid fa-cube" size="2xl" flip="horizontal"/>
-        <v-tooltip activator="parent" location="bottom" text="+Y" />
-      </v-btn>
-
-      <v-btn rounded="lg" size="small" icon @click="changeView('-Y')" color="primary">
-        <font-awesome-icon icon="fa-solid fa-cube" size="2xl" flip="vertical" />
-        <v-tooltip activator="parent" location="bottom" text="-Y" />
-      </v-btn>
-
       <v-btn rounded="lg" size="small" icon @click="changeView('+Z')" color="primary">
-        <v-icon size="22px">
-          <TopFilledCubeIcon />
-        </v-icon>
+        <font-awesome-icon icon="fa-solid fa-cube" size="2xl" flip="horizontal"/>
         <v-tooltip activator="parent" location="bottom" text="+Z" />
       </v-btn>
 
       <v-btn rounded="lg" size="small" icon @click="changeView('-Z')" color="primary">
+        <font-awesome-icon icon="fa-solid fa-cube" size="2xl" flip="vertical" />
+        <v-tooltip activator="parent" location="bottom" text="-Z" />
+      </v-btn>
+
+      <v-btn rounded="lg" size="small" icon @click="changeView('+Y')" color="primary">
+        <v-icon size="22px">
+          <TopFilledCubeIcon />
+        </v-icon>
+        <v-tooltip activator="parent" location="bottom" text="+Y" />
+      </v-btn>
+
+      <v-btn rounded="lg" size="small" icon @click="changeView('-Y')" color="primary">
         <v-icon size="22px" style="transform: rotate(180deg)">
           <TopFilledCubeIcon/>
         </v-icon>
-        <v-tooltip activator="parent" location="bottom" text="-Z" />
+        <v-tooltip activator="parent" location="bottom" text="-Y" />
       </v-btn>
 
       <v-btn rounded="lg" size="small" icon @click="changeView('XYZ')" color="primary">

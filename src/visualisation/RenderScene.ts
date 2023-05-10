@@ -106,20 +106,20 @@ class RenderScene {
       case '-X':
         this._camera.rotateCamera(PI, PI / 2)
         return
-      case '+Y':
-        this._camera.rotateCamera(-PI / 2, PI / 2)
-        return
-      case '-Y':
+      case '+Z':
         this._camera.rotateCamera(PI / 2, PI / 2)
         return
-      case '+Z':
+      case '-Z':
+        this._camera.rotateCamera(-PI / 2, PI / 2)
+        return
+      case '+Y':
         this._camera.rotateCamera(PI / 2, 0)
         return
-      case '-Z':
+      case '-Y':
         this._camera.rotateCamera(PI / 2, PI)
         return
       case 'XYZ':
-        this._camera.rotateCamera(-PI / 4, PI / 3)
+        this._camera.rotateCamera(PI / 4, PI / 3)
         return
     }
   }
@@ -127,11 +127,9 @@ class RenderScene {
   setEnvironment(env?: string) {
     const envFileName = env ? ENVIRONMENT_FILENAMES[ENVIRONMENT_NAMES.indexOf(env)] : ENVIRONMENT_FILENAMES[0]
 
-    this._scene.environmentTexture =
-      CubeTexture.CreateFromPrefilteredData(`/environments/${envFileName}`, this._scene);
-
-    const skybox = this._scene.createDefaultSkybox(this._scene.environmentTexture);
-    skybox!.rotation.x = Math.PI / 2
+    const hdrTexture = CubeTexture.CreateFromPrefilteredData(`/environments/${envFileName}`, this._scene);
+    this._scene.environmentTexture = hdrTexture
+    this._scene.createDefaultSkybox(this._scene.environmentTexture);
   }
 
   private addOnPointerObservable() {
