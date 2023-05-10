@@ -87,7 +87,7 @@ export class FluidVisualisation {
         this.boxMaterial.metallic = 0.3
         this.boxMaterial.roughness = 0
         this.boxMaterial.alpha = DEFAULT_BOX_OPACITY
-        this.boxMaterial.backFaceCulling = true
+        this.boxMaterial.backFaceCulling = false
         this.boxMaterial.cullBackFaces = false
         this.boxMaterialFront = this.boxMaterial.clone('boxMeshFrontMat')
         this.boxMaterialFront.cullBackFaces = true
