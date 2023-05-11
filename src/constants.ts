@@ -1,3 +1,5 @@
+import { Vector3 } from "@babylonjs/core"
+
 export const MESH_DEFAULT_ALPHA = 1.0
 export const MESH_TOGGLED_ALPHA = 0.3
 
@@ -49,4 +51,14 @@ export const ENVIRONMENT_FILENAMES = [
     "country.env",
     "night.env",
     "Runyon_Canyon_A_2k_cube_specular.env",
-];
+]
+
+export const eps = 0.0001;
+export const eps1 = new Vector3(eps, -eps, -eps);
+export const eps2 = new Vector3(-eps, -eps, eps);
+export const eps3 = new Vector3(-eps, eps, -eps);
+export const eps4 = new Vector3(eps, eps, eps);
+export const dir1 = new Vector3(1, -1, -1);
+export const dir2 = new Vector3(-1, -1, 1);
+export const dir3 = new Vector3(-1, 1, -1);
+export const dir4 = new Vector3(1, 1, 1);
