@@ -15,6 +15,7 @@ import {
 } from "@babylonjs/core";
 import RenderScene from "./RenderScene";
 import { DEFAULT_BOX_OPACITY } from "@/constants";
+import { SDFHelper } from "./SDFHelper";
 
 // TODO: in constuctor add FluidSimulatiom class
 export class FluidVisualisation {
@@ -24,6 +25,10 @@ export class FluidVisualisation {
     private engine: Engine
     private sceneRenderObserver: Nullable<Observer<Scene>>
     private sceneKeyboardObserver: Nullable<Observer<KeyboardInfo>>
+
+    // Collision objects
+    private collisionObjectPromises: any[]
+    private collisionObjects: any[]
 
     // Bounding Box
     private boxMin: Vector3
@@ -54,6 +59,9 @@ export class FluidVisualisation {
         this.paused = false
         this.checkBounds = true
 
+        this.collisionObjectPromises = []
+        this.collisionObjects = []
+
         this.boxMax = new Vector3(1, 1, 1)
         this.boxMin = new Vector3(-1, -1, -1)
         this.boxMesh = null as any
@@ -70,6 +78,10 @@ export class FluidVisualisation {
             new Plane(0, 1, 0, Math.abs(this.boxMin.y)),
         ]
         this.collisionPlanes = []
+        for (let i = 0; i < this.origCollisionPlanes.length; ++i) {
+            const plane = this.origCollisionPlanes[i]
+            this.addCollisionPlane(plane.normal, plane.d, i === this.origCollisionPlanes.length - 1 ? 0.98 : undefined)
+        }
 
         this.angleX = 0
         this.angleY = 0
@@ -81,7 +93,15 @@ export class FluidVisualisation {
         this.boxMaterial.alpha = value
     }
 
-    run() {
+    async run() {
+        this.collisionObjects = await Promise.all(this.collisionObjectPromises);
+
+        // Get collision meshes
+        for (let i = 0; i < this.origCollisionPlanes.length; ++i) {
+            this.collisionPlanes.push(this.collisionObjects[i]);
+        }
+        this.collisionPlanes[this.collisionPlanes.length - 1][1].disabled = true;
+
         // Box mesh
         this.boxMaterial = new PBRMaterial('boxMeshMat', this.scene)
         this.boxMaterial.metallic = 0.3
@@ -177,6 +197,26 @@ export class FluidVisualisation {
         // TODO: fluid simulation
     }
 
+    addCollisionPlane(normal: Vector3, d: number, collisionRestitution: number | undefined) {
+        const collisionShape = {
+            params: [normal.clone(), d],
+            sdEvaluate: SDFHelper.SDPlane,
+            computeNormal: SDFHelper.ComputeSDFNormal,
+            mesh: null,
+            position: new Vector3(0, 0, 0),
+            rotation: new Vector3(0, 0, 0),
+            transf: Matrix.Identity(),
+            scale: 1,
+            invTransf: Matrix.Identity(),
+            dragPlane: null,
+            collisionRestitution,
+        }
+
+        const promise = Promise.resolve([null, collisionShape])
+        this.collisionObjectPromises.push(promise)
+        return promise
+    }
+
     rotateMeshes(angleX: number, angleY: number) {
         const transform = Matrix.RotationYawPitchRoll(0, angleX * Math.PI / 180, angleY * Math.PI / 180)
         const boxVertices = [
@@ -196,11 +236,11 @@ export class FluidVisualisation {
             yMin = Math.min(yMin, v.y)
         }
 
-        // this.collisionPlanes[this.origCollisionPlanes.length - 1][1].params[1] = Math.abs(yMin) + 0.02
-        // for (let i = 0; i < this.origCollisionPlanes.length - 1; ++i) {
-        //     const plane = this.origCollisionPlanes[i].transform(transform)
-        //     this.collisionPlanes[i][1].params = [plane.normal, plane.d]
-        // }
+        this.collisionPlanes[this.origCollisionPlanes.length - 1][1].params[1] = Math.abs(yMin) + 0.02
+        for (let i = 0; i < this.origCollisionPlanes.length - 1; ++i) {
+            const plane = this.origCollisionPlanes[i].transform(transform)
+            this.collisionPlanes[i][1].params = [plane.normal, plane.d]
+        }
 
         // TODO: Add rotation to all items?
 
@@ -241,11 +281,11 @@ export class FluidVisualisation {
         this.boxMesh?.setEnabled(value)
         this.boxMeshFront?.setEnabled(value)
 
-        // for (let i = 0; i < this.collisionPlanes.length; ++i) {
-        //     this.collisionPlanes[i][1].disabled =
-        //         (!value && i < this.collisionPlanes.length - 1) ||
-        //         (value && i === this.collisionPlanes.length - 1)
-        // }
+        for (let i = 0; i < this.collisionPlanes.length; ++i) {
+            this.collisionPlanes[i][1].disabled =
+                (!value && i < this.collisionPlanes.length - 1) ||
+                (value && i === this.collisionPlanes.length - 1)
+        }
 
         if (!value) {
             this.autoRotateBox = false
@@ -253,11 +293,22 @@ export class FluidVisualisation {
     }
 
     dispose() {
+        while (this.collisionObjects.length > 1) {
+            this.disposeCollisionObject(0)
+        }
         this.scene.onBeforeRenderObservable.remove(this.sceneRenderObserver)
         this.scene.onKeyboardObservable.remove(this.sceneKeyboardObserver)
         this.boxMesh?.dispose()
         this.boxMeshFront?.dispose()
         this.boxMaterial?.dispose()
         this.boxMaterialFront?.dispose()
+    }
+
+    disposeCollisionObject(index: number) {
+        const shape = this.collisionObjects[index][1]
+        shape?.mesh?.material?.dispose()
+        shape?.mesh?.dispose()
+        this.collisionObjects.splice(index, 1)
+        this.collisionObjectPromises.splice(index, 1)
     }
 }
