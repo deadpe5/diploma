@@ -39,7 +39,7 @@ export const BOX_OPACITY_STEP = 0.01
 export const DEFAULT_BOX_OPACITY = 0.2
 
 export const ENVIRONMENT_NAMES = [
-    "Country",
+    "Country", 
     "Night",
     "Canyon",
 ]

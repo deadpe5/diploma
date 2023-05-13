@@ -46,8 +46,8 @@ export class FluidVisualisation {
     private autoRotateBox: boolean
     private prevTransform: Matrix
 
-    private paused: boolean
-    private checkBounds: boolean
+    private isPaused: boolean
+    private enableCheckBounds: boolean
 
     constructor(renderScene: RenderScene) {
         this.renderScene = renderScene
@@ -56,8 +56,8 @@ export class FluidVisualisation {
         this.sceneRenderObserver = null as any
         this.sceneKeyboardObserver = null as any
 
-        this.paused = false
-        this.checkBounds = true
+        this.isPaused = false
+        this.enableCheckBounds = true
 
         this.collisionObjectPromises = []
         this.collisionObjects = []
@@ -166,6 +166,10 @@ export class FluidVisualisation {
         })
 
         this.sceneRenderObserver = this.scene.onBeforeRenderObservable.add(() => {
+            if (this.isPaused) {
+                return
+            }
+
             if (arrowLeftDown) {
                 this.angleX += (2 * 30) / 60
                 this.rotateMeshes(this.angleX, this.angleY)
@@ -258,7 +262,7 @@ export class FluidVisualisation {
     }
 
     public onPaused(value: boolean) {
-        this.paused = value
+        this.isPaused = value
         if (value) {
             this.autoRotateBox = false
         }
@@ -277,7 +281,7 @@ export class FluidVisualisation {
     }
 
     public onCheckBounds(value: boolean) {
-        this.checkBounds = value
+        this.enableCheckBounds = value
         this.boxMesh?.setEnabled(value)
         this.boxMeshFront?.setEnabled(value)
 

@@ -28,10 +28,10 @@
             </template>
         </v-text-field>
         <v-switch v-model="LCS" label="Perform rotation in LCS" color="primary" ></v-switch>
-        <v-btn width="100%" color="primary" variant="outlined" style="margin-bottom: 22px;" @click="restoreRotation">
+        <v-btn width="100%" color="primary" variant="elevated" style="margin-bottom: 22px;" @click="restoreRotation">
             Restore rotation
         </v-btn>
-        <v-btn width="100%" color="secondary" variant="outlined" :to="{ name: 'root' }">
+        <v-btn width="100%" color="secondary" variant="elevated" :to="{ name: 'root' }">
             Back
         </v-btn>
     </v-container>

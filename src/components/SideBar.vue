@@ -44,7 +44,7 @@
                         :rules="boxRules" variant="outlined" :step="BOX_OPACITY_STEP"></v-text-field>
                 </template>
             </v-slider>
-            <v-snackbar v-model="boxSnackbar" :timeout="timeout" color="red-accent-4">
+            <v-snackbar v-model="boxSnackbar" :timeout="timeout" color="error">
                 {{ boxErrorMsg }}
                 <template v-slot:actions>
                     <v-btn color="white" @click="boxSnackbar = false">
@@ -69,7 +69,7 @@
                             hide-details :rules="particleRules" variant="outlined"></v-text-field>
                     </template>
                 </v-slider>
-                <v-snackbar v-model="particleSnackbar" :timeout="timeout" color="red-accent-4">
+                <v-snackbar v-model="particleSnackbar" :timeout="timeout" color="error">
                     {{ particleErrorMsg }}
                     <template v-slot:actions>
                         <v-btn color="white" @click="particleSnackbar = false">
@@ -79,8 +79,8 @@
                 </v-snackbar>
 
                 <v-btn 
-                    width="100%" class="mb-4" color="secondary" 
-                    :variant="visualisationStore.isPaused ? 'outlined' : 'elevated' " 
+                    width="100%" class="mb-4"
+                    :color="visualisationStore.isPaused ? 'secondary-darken-1' : 'secondary' " 
                     :text="visualisationStore.isPaused ? 'Resume' : 'Pause' "
                     @click="pause"/>
                 <v-btn width="100%" color="primary" @click="restart">Restart</v-btn>
