@@ -18,7 +18,7 @@
                     :rules="rules[0]" variant="outlined" :step="PARTICLE_SIZE_STEP"></v-text-field>
             </template>
         </v-slider>
-        <v-snackbar v-model="snackbars[0]" :timeout="timeout" color="red-accent-4">
+        <v-snackbar v-model="snackbars[0]" :timeout="timeout" color="error">
             {{ errorMsgs[0] }}
             <template v-slot:actions>
                 <v-btn color="white" @click="snackbars[0] = false">
@@ -35,7 +35,7 @@
                     :rules="rules[1]" variant="outlined" :step="SMOOTHING_RADIUS_STEP"></v-text-field>
             </template>
         </v-slider>
-        <v-snackbar v-model="snackbars[1]" :timeout="timeout" color="red-accent-4">
+        <v-snackbar v-model="snackbars[1]" :timeout="timeout" color="error">
             {{ errorMsgs[1] }}
             <template v-slot:actions>
                 <v-btn color="white" @click="snackbars[1] = false">
@@ -52,7 +52,7 @@
                     :rules="rules[2]" variant="outlined" :step="FLUID_DENSITY_STEP"></v-text-field>
             </template>
         </v-slider>
-        <v-snackbar v-model="snackbars[2]" :timeout="timeout" color="red-accent-4">
+        <v-snackbar v-model="snackbars[2]" :timeout="timeout" color="error">
             {{ errorMsgs[2] }}
             <template v-slot:actions>
                 <v-btn color="white" @click="snackbars[2] = false">
@@ -69,7 +69,7 @@
                     :rules="rules[3]" variant="outlined" :step="PREASURE_CONSTANT_STEP"></v-text-field>
             </template>
         </v-slider>
-        <v-snackbar v-model="snackbars[3]" :timeout="timeout" color="red-accent-4">
+        <v-snackbar v-model="snackbars[3]" :timeout="timeout" color="error">
             {{ errorMsgs[3] }}
             <template v-slot:actions>
                 <v-btn color="white" @click="snackbars[3] = false">
@@ -86,7 +86,7 @@
                     :rules="rules[4]" variant="outlined" :step="FLUID_VELOCITY_STEP"></v-text-field>
             </template>
         </v-slider>
-        <v-snackbar v-model="snackbars[4]" :timeout="timeout" color="red-accent-4">
+        <v-snackbar v-model="snackbars[4]" :timeout="timeout" color="error">
             {{ errorMsgs[4] }}
             <template v-slot:actions>
                 <v-btn color="white" @click="snackbars[4] = false">
