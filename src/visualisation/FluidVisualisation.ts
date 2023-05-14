@@ -11,13 +11,31 @@ import {
     KeyboardEventTypes,
     Observer,
     KeyboardInfo,
-    Nullable
+    Nullable,
+    FluidRenderer,
+    IFluidRenderingRenderObject,
+    Color3,
+    VertexBuffer,
+    TmpVectors,
 } from "@babylonjs/core";
 import RenderScene from "./RenderScene";
-import { DEFAULT_BOX_OPACITY } from "@/constants";
+import {
+    DEFAULT_BOX_OPACITY,
+    DEFAULT_DENSITY_REFERENCE,
+    DEFAULT_FLUID_VELOCITY,
+    DEFAULT_PARTICLES_COUNT,
+    DEFAULT_PARTICLE_SIZE,
+    DEFAULT_PREASURE_CONSTANT,
+    DEFAULT_SMOOTHING_RADIUS,
+    MAX_ACCELERATION,
+    PARTICLE_RADIUS,
+    SHAPE_COLLISION_RESTITUTION,
+    VISCOSITY,
+} from "@/constants";
 import { SDFHelper } from "./SDFHelper";
+import { ParticleGenerator } from "./ParticleGenerator";
+import { FluidSimulator } from "./FluidSimulator";
 
-// TODO: in constuctor add FluidSimulatiom class
 export class FluidVisualisation {
     // Rendering
     private renderScene: RenderScene
@@ -25,6 +43,13 @@ export class FluidVisualisation {
     private engine: Engine
     private sceneRenderObserver: Nullable<Observer<Scene>>
     private sceneKeyboardObserver: Nullable<Observer<KeyboardInfo>>
+    private sceneObserver: Nullable<Observer<Scene>>
+    private fluidRenderer: Nullable<FluidRenderer>
+    private numParticles: number
+    private shapeCollisionRestitution: number
+    private particleGenerator: Nullable<ParticleGenerator>
+    private fluidRenderObject: IFluidRenderingRenderObject
+    private fluidSimulation: FluidSimulator
 
     // Collision objects
     private collisionObjectPromises: any[]
@@ -47,23 +72,57 @@ export class FluidVisualisation {
     private prevTransform: Matrix
 
     private isPaused: boolean
-    private enableCheckBounds: boolean
 
     constructor(renderScene: RenderScene) {
         this.renderScene = renderScene
         this.scene = renderScene.scene
         this.engine = renderScene.engine
+        this.fluidRenderer = this.scene.enableFluidRenderer()
+        this.numParticles = DEFAULT_PARTICLES_COUNT
+
         this.sceneRenderObserver = null as any
         this.sceneKeyboardObserver = null as any
+        this.sceneObserver = null as any
+        this.shapeCollisionRestitution = SHAPE_COLLISION_RESTITUTION
+        this.particleGenerator = null
+        const particleRadius = PARTICLE_RADIUS
+        const camera = this.scene.activeCameras?.[0] ?? this.scene.activeCamera
+
+        this.fluidRenderObject = this.fluidRenderer!.addCustomParticles({}, 0, false, undefined, camera!)
+        this.fluidRenderObject.targetRenderer.enableBlurDepth = true;
+        this.fluidRenderObject.targetRenderer.blurDepthFilterSize = 20;
+        this.fluidRenderObject.targetRenderer.blurDepthNumIterations = 5;
+        this.fluidRenderObject.targetRenderer.blurDepthDepthScale = 10;
+        this.fluidRenderObject.targetRenderer.fluidColor = new Color3(1 - 0.5, 1 - 0.2, 1 - 0.05);
+        this.fluidRenderObject.targetRenderer.density = 2.2;
+        this.fluidRenderObject.targetRenderer.refractionStrength = 0.02;
+        this.fluidRenderObject.targetRenderer.specularPower = 150;
+        this.fluidRenderObject.targetRenderer.blurThicknessFilterSize = 10;
+        this.fluidRenderObject.targetRenderer.blurThicknessNumIterations = 2;
+        this.fluidRenderObject.targetRenderer.dirLight = new Vector3(2, -1, 1);
+        this.fluidRenderObject.object.particleSize = particleRadius * 2 * 2;
+        this.fluidRenderObject.object.particleThicknessAlpha =
+            this.fluidRenderObject.object.particleSize;
+        this.fluidRenderObject.object.useVelocity =
+            this.fluidRenderObject.targetRenderer.useVelocity;
+        this.fluidRenderObject.targetRenderer.minimumThickness =
+            this.fluidRenderObject.object.particleThicknessAlpha / 2;
+
+        this.fluidSimulation = new FluidSimulator()
+        this.fluidSimulation.smoothingRadius = particleRadius * 2
+        this.fluidSimulation.maxVelocity = 3
+        this.particleGenerator = new ParticleGenerator(this.scene)
+        this.particleGenerator.particleRadius = particleRadius
+
+        this.boxMax = new Vector3(1, 1, 1)
+        this.boxMin = new Vector3(-1, -1, -1)
+        this.particleGenerator.position.y = (this.boxMin.y + this.boxMax.y) / 2
 
         this.isPaused = false
-        this.enableCheckBounds = true
 
         this.collisionObjectPromises = []
         this.collisionObjects = []
 
-        this.boxMax = new Vector3(1, 1, 1)
-        this.boxMin = new Vector3(-1, -1, -1)
         this.boxMesh = null as any
         this.boxMeshFront = null as any
         this.boxMaterial = null as any
@@ -198,10 +257,34 @@ export class FluidVisualisation {
             }
         })
 
-        // TODO: fluid simulation
+        this.fluidRenderObject.object.particleSize = DEFAULT_PARTICLE_SIZE
+        this.fluidSimulation.smoothingRadius = DEFAULT_SMOOTHING_RADIUS
+        this.fluidSimulation.densityReference = DEFAULT_DENSITY_REFERENCE
+        this.fluidSimulation.pressureConstant = DEFAULT_PREASURE_CONSTANT
+        this.fluidSimulation.viscosity = VISCOSITY * 2
+        this.fluidSimulation.maxVelocity = DEFAULT_FLUID_VELOCITY
+        this.fluidSimulation.maxAcceleration = MAX_ACCELERATION
+
+        await this.generateParticles()
+
+        this.sceneObserver = this.scene.onBeforeRenderObservable.add(() => {
+            this.fluidSimulation.currentNumParticles = Math.min(this.numParticles, this.particleGenerator!.currNumParticles)
+            this.fluidRenderObject.object.setNumParticles(this.fluidSimulation.currentNumParticles)
+
+            if (!this.isPaused) {
+                this.fluidSimulation.update(1 / 100)
+                this.checkCollisions(this.fluidRenderObject.object.particleSize / 2)
+            }
+
+            if (this.fluidRenderObject &&
+                this.fluidRenderObject.object.vertexBuffers['position']) {
+                this.fluidRenderObject.object.vertexBuffers['position'].updateDirectly(this.fluidSimulation.positions!, 0)
+                this.fluidRenderObject.object.vertexBuffers['velocity'].updateDirectly(this.fluidSimulation.velocities!, 0)
+            }
+        })
     }
 
-    addCollisionPlane(normal: Vector3, d: number, collisionRestitution: number | undefined) {
+    public addCollisionPlane(normal: Vector3, d: number, collisionRestitution: number | undefined) {
         const collisionShape = {
             params: [normal.clone(), d],
             sdEvaluate: SDFHelper.SDPlane,
@@ -221,7 +304,7 @@ export class FluidVisualisation {
         return promise
     }
 
-    rotateMeshes(angleX: number, angleY: number) {
+    public rotateMeshes(angleX: number, angleY: number) {
         const transform = Matrix.RotationYawPitchRoll(0, angleX * Math.PI / 180, angleY * Math.PI / 180)
         const boxVertices = [
             new Vector3(this.boxMin.x, this.boxMin.y, this.boxMin.z),
@@ -273,7 +356,7 @@ export class FluidVisualisation {
         this.angleY = 0
         this.autoRotateBox = false
         this.rotateMeshes(0, 0)
-        // generate particles
+        this.generateParticles()
     }
 
     public onAutoRotate(value: boolean) {
@@ -281,7 +364,6 @@ export class FluidVisualisation {
     }
 
     public onCheckBounds(value: boolean) {
-        this.enableCheckBounds = value
         this.boxMesh?.setEnabled(value)
         this.boxMeshFront?.setEnabled(value)
 
@@ -296,11 +378,12 @@ export class FluidVisualisation {
         }
     }
 
-    dispose() {
+    public dispose() {
         while (this.collisionObjects.length > 1) {
             this.disposeCollisionObject(0)
         }
         this.scene.onBeforeRenderObservable.remove(this.sceneRenderObserver)
+        this.scene.onBeforeRenderObservable.remove(this.sceneObserver)
         this.scene.onKeyboardObservable.remove(this.sceneKeyboardObserver)
         this.boxMesh?.dispose()
         this.boxMeshFront?.dispose()
@@ -308,11 +391,94 @@ export class FluidVisualisation {
         this.boxMaterialFront?.dispose()
     }
 
-    disposeCollisionObject(index: number) {
+    public disposeCollisionObject(index: number) {
         const shape = this.collisionObjects[index][1]
         shape?.mesh?.material?.dispose()
         shape?.mesh?.dispose()
         this.collisionObjects.splice(index, 1)
         this.collisionObjectPromises.splice(index, 1)
+    }
+
+    private async generateParticles(regenerateAll: boolean = true) {
+        await this.particleGenerator?.generateParticles(this.numParticles, regenerateAll)
+
+        if (this.fluidSimulation &&
+            this.particleGenerator &&
+            this.fluidSimulation.positions !== this.particleGenerator.positions) {
+            this.fluidSimulation.setParticleData(this.particleGenerator.positions, this.particleGenerator.velocities)
+
+            this.fluidRenderObject.object.vertexBuffers['position']?.dispose()
+            this.fluidRenderObject.object.vertexBuffers['velocity']?.dispose()
+
+            this.fluidRenderObject.object.vertexBuffers['position'] =
+                new VertexBuffer(this.engine, this.fluidSimulation.positions!, VertexBuffer.PositionKind, true, false, 3, true)
+
+            this.fluidRenderObject.object.vertexBuffers['velocity'] =
+                new VertexBuffer(this.engine, this.fluidSimulation.velocities!, 'velocity', true, false, 3, true)
+        }
+    }
+
+    private checkCollisions(particleRadius: number) {
+        if (this.collisionObjects.length === 0) {
+            return
+        }
+
+        const positions = this.fluidSimulation.positions!
+        const velocities = this.fluidSimulation.velocities!
+        const tmpQuat = TmpVectors.Quaternion[0]
+        const tmpScale = TmpVectors.Vector3[0]
+        tmpScale.copyFromFloats(1, 1, 1)
+
+        for (let i = 0; i < this.collisionObjects.length; ++i) {
+            const shape = this.collisionObjects[i][1]
+            const quat = shape.mesh?.rotationQuaternion ??
+                shape.rotationQuaternion ??
+                Quaternion.FromEulerAnglesToRef(
+                    shape.mesh?.rotation.x ?? shape.rotation.x,
+                    shape.mesh?.rotation.y ?? shape.rotation.y,
+                    shape.mesh?.rotation.z ?? shape.rotation.z,
+                    tmpQuat
+                )
+
+            Matrix.ComposeToRef(tmpScale, quat, shape.mesh?.position ?? shape.position, shape.transf)
+            shape.transf.invertToRef(shape.invTransf)
+        }
+
+        const pos = TmpVectors.Vector3[4]
+        const normal = TmpVectors.Vector3[7]
+        for (let a = 0; a < this.fluidSimulation.currentNumParticles; ++a) {
+            const px = positions[a * 3 + 0]
+            const py = positions[a * 3 + 1]
+            const pz = positions[a * 3 + 2]
+            for (let i = 0; i < this.collisionObjects.length; ++i) {
+                const shape = this.collisionObjects[i][1]
+                if (shape.disabled) {
+                    continue
+                }
+
+                pos.copyFromFloats(px, py, pz)
+                Vector3.TransformCoordinatesToRef(pos, shape.invTransf, pos)
+                pos.scaleInPlace(1 / shape.scale)
+                const dist = shape.scale * shape.sdEvaluate(pos, ...shape.params) - particleRadius
+
+                if (dist < 0) {
+                    shape.computeNormal(pos, shape, normal)
+                    const restitution = shape.collisionRestitution ?? this.shapeCollisionRestitution
+                    const dotvn =
+                        velocities[a * 3 + 0] * normal.x +
+                        velocities[a * 3 + 1] * normal.y +
+                        velocities[a * 3 + 2] * normal.z
+
+                    velocities[a * 3 + 0] = (velocities[a * 3 + 0] - 2 * dotvn * normal.x) * restitution
+                    velocities[a * 3 + 1] = (velocities[a * 3 + 1] - 2 * dotvn * normal.y) * restitution
+                    velocities[a * 3 + 2] = (velocities[a * 3 + 2] - 2 * dotvn * normal.z) * restitution
+
+                    positions[a * 3 + 0] -= normal.x * dist
+                    positions[a * 3 + 1] -= normal.y * dist
+                    positions[a * 3 + 2] -= normal.z * dist
+                }
+            }
+        }
+
     }
 }
