@@ -14,23 +14,27 @@ import {
     Nullable,
     FluidRenderer,
     IFluidRenderingRenderObject,
-    Color3,
     VertexBuffer,
     TmpVectors,
+    Color4,
 } from "@babylonjs/core";
 import RenderScene from "./RenderScene";
 import {
     DEFAULT_BOX_OPACITY,
     DEFAULT_DENSITY_REFERENCE,
+    DEFAULT_FLUID_COLOR,
+    DEFAULT_FLUID_COLOR_DENSITY,
     DEFAULT_FLUID_VELOCITY,
     DEFAULT_PARTICLES_COUNT,
     DEFAULT_PARTICLE_SIZE,
-    DEFAULT_PREASURE_CONSTANT,
+    DEFAULT_PRESSURE_CONSTANT,
     DEFAULT_SMOOTHING_RADIUS,
     MAX_ACCELERATION,
+    MAX_FLUID_COLOR_DENSITY,
     PARTICLE_RADIUS,
     SHAPE_COLLISION_RESTITUTION,
     VISCOSITY,
+    changableFluidParams,
 } from "@/constants";
 import { SDFHelper } from "./SDFHelper";
 import { ParticleGenerator } from "./ParticleGenerator";
@@ -93,8 +97,8 @@ export class FluidVisualisation {
         this.fluidRenderObject.targetRenderer.blurDepthFilterSize = 20;
         this.fluidRenderObject.targetRenderer.blurDepthNumIterations = 5;
         this.fluidRenderObject.targetRenderer.blurDepthDepthScale = 10;
-        this.fluidRenderObject.targetRenderer.fluidColor = new Color3(1 - 0.5, 1 - 0.2, 1 - 0.05);
-        this.fluidRenderObject.targetRenderer.density = 2.2;
+        this.fluidRenderObject.targetRenderer.fluidColor = DEFAULT_FLUID_COLOR.clone()
+        this.fluidRenderObject.targetRenderer.density = DEFAULT_FLUID_COLOR_DENSITY;
         this.fluidRenderObject.targetRenderer.refractionStrength = 0.02;
         this.fluidRenderObject.targetRenderer.specularPower = 150;
         this.fluidRenderObject.targetRenderer.blurThicknessFilterSize = 10;
@@ -260,7 +264,7 @@ export class FluidVisualisation {
         this.fluidRenderObject.object.particleSize = DEFAULT_PARTICLE_SIZE
         this.fluidSimulation.smoothingRadius = DEFAULT_SMOOTHING_RADIUS
         this.fluidSimulation.densityReference = DEFAULT_DENSITY_REFERENCE
-        this.fluidSimulation.pressureConstant = DEFAULT_PREASURE_CONSTANT
+        this.fluidSimulation.pressureConstant = DEFAULT_PRESSURE_CONSTANT
         this.fluidSimulation.viscosity = VISCOSITY * 2
         this.fluidSimulation.maxVelocity = DEFAULT_FLUID_VELOCITY
         this.fluidSimulation.maxAcceleration = MAX_ACCELERATION
@@ -375,6 +379,48 @@ export class FluidVisualisation {
 
         if (!value) {
             this.autoRotateBox = false
+        }
+    }
+
+    public changeColor(newColor: Color4) {
+        const fluidRenderer = this.fluidRenderer
+        if (fluidRenderer && fluidRenderer.targetRenderers[0]) {
+            fluidRenderer.targetRenderers[0].fluidColor.copyFromFloats(newColor.r, newColor.g, newColor.b)
+
+            const newFluidColorDensity = newColor.a * MAX_FLUID_COLOR_DENSITY
+            fluidRenderer.targetRenderers[0].density = newFluidColorDensity
+        }
+    }
+
+    public changeParticlesCount(value: number) {
+        this.numParticles = value
+        this.generateParticles(false)
+    }
+
+    public changeFluidParam(param: changableFluidParams, value: number) {
+        switch (param) {
+            case changableFluidParams.particleSize:
+                if (this.fluidRenderer && this.fluidRenderer.renderObjects[0].object) {
+                    this.fluidRenderer.renderObjects[0].object.particleSize = value
+                }
+                break;
+            case changableFluidParams.smoothingRadius:
+                if (this.particleGenerator) {
+                    this.fluidSimulation.smoothingRadius = value
+                    this.particleGenerator.particleRadius = value / 2
+                }
+                break;
+            case changableFluidParams.densityReference:
+                this.fluidSimulation.densityReference = value
+                break;
+            case changableFluidParams.pressureConstant:
+                this.fluidSimulation.pressureConstant = value
+                break;
+            case changableFluidParams.maxVelocity:
+                this.fluidSimulation.maxVelocity = value
+                break;
+            default:
+                break;
         }
     }
 

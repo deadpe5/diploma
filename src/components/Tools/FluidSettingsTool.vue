@@ -12,7 +12,7 @@
         <v-label class="ml-4 mb-2">Fluid</v-label>
         <div class="text-caption ml-4">Particle size</div>
         <v-slider thumb-label :min="MIN_PARTICLE_SIZE" :max="MAX_PARTICLE_SIZE" :step="PARTICLE_SIZE_STEP"
-            @mouseover="onMouseEnter(0)" v-model="particleSize" class="padding">
+            @mouseover="onMouseEnter(0)" v-model="particleSize" class="padding8">
             <template v-slot:append>
                 <v-text-field v-model="particleSize" type="number" style="width: 100px" density="compact" hide-details
                     :rules="rules[0]" variant="outlined" :step="PARTICLE_SIZE_STEP"></v-text-field>
@@ -29,7 +29,7 @@
 
         <div class="text-caption ml-4">Smoothing radius</div>
         <v-slider thumb-label :min="MIN_SMOOTHING_RADIUS" :max="MAX_SMOOTHING_RADIUS" :step="SMOOTHING_RADIUS_STEP"
-            @mouseover="onMouseEnter(1)" v-model="smoothingRadius" class="padding">
+            @mouseover="onMouseEnter(1)" v-model="smoothingRadius" class="padding8">
             <template v-slot:append>
                 <v-text-field v-model="smoothingRadius" type="number" style="width: 100px" density="compact" hide-details
                     :rules="rules[1]" variant="outlined" :step="SMOOTHING_RADIUS_STEP"></v-text-field>
@@ -45,10 +45,10 @@
         </v-snackbar>
 
         <div class="text-caption ml-4">Density reference</div>
-        <v-slider thumb-label :min="MIN_DENSITY_REFERENCE" :max="MAX_DENSITY_REFERENCE" :step="DENSITY_REFERENCE_STEP" @mouseover="onMouseEnter(2)"
-            v-model="fluidDensity" class="padding">
+        <v-slider thumb-label :min="MIN_DENSITY_REFERENCE" :max="MAX_DENSITY_REFERENCE" :step="DENSITY_REFERENCE_STEP"
+            @mouseover="onMouseEnter(2)" v-model="densityReference" class="padding8">
             <template v-slot:append>
-                <v-text-field v-model="fluidDensity" type="number" style="width: 100px" density="compact" hide-details
+                <v-text-field v-model="densityReference" type="number" style="width: 100px" density="compact" hide-details
                     :rules="rules[2]" variant="outlined" :step="DENSITY_REFERENCE_STEP"></v-text-field>
             </template>
         </v-slider>
@@ -61,12 +61,12 @@
             </template>
         </v-snackbar>
 
-        <div class="text-caption ml-4">Preasure constant</div>
-        <v-slider thumb-label :min="MIN_PREASURE_CONSTANT" :max="MAX_PREASURE_CONSTANT" :step="PREASURE_CONSTANT_STEP" @mouseover="onMouseEnter(3)"
-            v-model="preasureConstant" class="padding">
+        <div class="text-caption ml-4">Pressure constant</div>
+        <v-slider thumb-label :min="MIN_PRESSURE_CONSTANT" :max="MAX_PRESSURE_CONSTANT" :step="PRESSURE_CONSTANT_STEP"
+            @mouseover="onMouseEnter(3)" v-model="pressureConstant" class="padding8">
             <template v-slot:append>
-                <v-text-field v-model="preasureConstant" type="number" style="width: 100px" density="compact" hide-details
-                    :rules="rules[3]" variant="outlined" :step="PREASURE_CONSTANT_STEP"></v-text-field>
+                <v-text-field v-model="pressureConstant" type="number" style="width: 100px" density="compact" hide-details
+                    :rules="rules[3]" variant="outlined" :step="PRESSURE_CONSTANT_STEP"></v-text-field>
             </template>
         </v-slider>
         <v-snackbar v-model="snackbars[3]" :timeout="timeout" color="error">
@@ -79,8 +79,8 @@
         </v-snackbar>
 
         <div class="text-caption ml-4">Max velocity</div>
-        <v-slider thumb-label :min="MIN_FLUID_VELOCITY" :max="MAX_FLUID_VELOCITY" :step="FLUID_VELOCITY_STEP" @mouseover="onMouseEnter(4)"
-            v-model="fluidVelocity" class="padding">
+        <v-slider thumb-label :min="MIN_FLUID_VELOCITY" :max="MAX_FLUID_VELOCITY" :step="FLUID_VELOCITY_STEP"
+            @mouseover="onMouseEnter(4)" v-model="fluidVelocity" class="padding8">
             <template v-slot:append>
                 <v-text-field v-model="fluidVelocity" type="number" style="width: 100px" density="compact" hide-details
                     :rules="rules[4]" variant="outlined" :step="FLUID_VELOCITY_STEP"></v-text-field>
@@ -94,10 +94,9 @@
                 </v-btn>
             </template>
         </v-snackbar>
-
-        <v-label class="ml-4">Debug</v-label>
-        <v-checkbox label="Enable Debug Mode" class="ml-2 mr-4"></v-checkbox>
-        <v-select label="Feature" variant="solo" class="ml-4 mr-4"></v-select>
+    </v-container>
+    <v-container class="padding16">
+        <v-btn width="100%" color="primary" @click="restoreDefault">Restore default</v-btn>
     </v-container>
     <v-container>
         <v-btn width="100%" color="secondary" :to="{ name: 'root' }">
@@ -119,23 +118,31 @@ import {
     MIN_DENSITY_REFERENCE,
     MAX_DENSITY_REFERENCE,
     DENSITY_REFERENCE_STEP,
-    MIN_PREASURE_CONSTANT,
-    MAX_PREASURE_CONSTANT,
-    PREASURE_CONSTANT_STEP,
+    MIN_PRESSURE_CONSTANT,
+    MAX_PRESSURE_CONSTANT,
+    PRESSURE_CONSTANT_STEP,
     MIN_FLUID_VELOCITY,
     MAX_FLUID_VELOCITY,
     FLUID_VELOCITY_STEP,
+    DEFAULT_PARTICLE_SIZE,
+    changableFluidParams,
+    DEFAULT_SMOOTHING_RADIUS,
+    DEFAULT_DENSITY_REFERENCE,
+    DEFAULT_PRESSURE_CONSTANT,
+    DEFAULT_FLUID_VELOCITY,
 } from '../../constants'
+import { useVisualisationStore } from '@/stores/visualisationStore';
+const visualisationStore = useVisualisationStore()
 
 const boundingBoxHeight = ref(1)
 const boundingBoxWidth = ref(1)
 const boundingBoxDepth = ref(1)
 
-const particleSize = ref((MIN_PARTICLE_SIZE + MAX_PARTICLE_SIZE) / 2)
-const smoothingRadius = ref((MIN_SMOOTHING_RADIUS + MAX_SMOOTHING_RADIUS) / 2)
-const fluidDensity = ref((MIN_DENSITY_REFERENCE + MAX_DENSITY_REFERENCE) / 2)
-const preasureConstant = ref(Math.floor((MIN_PREASURE_CONSTANT + MAX_PREASURE_CONSTANT) / 2))
-const fluidVelocity = ref((MIN_FLUID_VELOCITY + MAX_FLUID_VELOCITY) / 2)
+const particleSize = ref(DEFAULT_PARTICLE_SIZE)
+const smoothingRadius = ref(DEFAULT_SMOOTHING_RADIUS)
+const densityReference = ref(DEFAULT_DENSITY_REFERENCE)
+const pressureConstant = ref(DEFAULT_PRESSURE_CONSTANT)
+const fluidVelocity = ref(DEFAULT_FLUID_VELOCITY)
 
 const timeout = ref(2000)
 const snackbars = ref([false, false, false, false, false])
@@ -159,8 +166,8 @@ const rules = [
     ],
     [
         (v: string | number) => (!isNaN(Number(v)) && Number.isInteger(Number(v))) || 'Fluid velocity must be an integer',
-        (v: string | number) => Number(v) >= MIN_PREASURE_CONSTANT || `Preasure constant must be greater than ${MIN_PREASURE_CONSTANT}`,
-        (v: string | number) => Number(v) <= MAX_PREASURE_CONSTANT || `Preasure constant must be lower than ${MAX_PREASURE_CONSTANT}`
+        (v: string | number) => Number(v) >= MIN_PRESSURE_CONSTANT || `Pressure constant must be greater than ${MIN_PRESSURE_CONSTANT}`,
+        (v: string | number) => Number(v) <= MAX_PRESSURE_CONSTANT || `Pressure constant must be lower than ${MAX_PRESSURE_CONSTANT}`
     ],
     [
         (v: string | number) => (!isNaN(Number(v)) && Number.isInteger(Number(v))) || 'Fluid velocity must be an integer',
@@ -182,6 +189,10 @@ watch(particleSize, () => {
             break
         }
     }
+
+    if (!snackbars.value[0]) {
+        visualisationStore.changeFluidParam(changableFluidParams.particleSize, particleSize.value)
+    }
 })
 
 watch(smoothingRadius, () => {
@@ -197,35 +208,47 @@ watch(smoothingRadius, () => {
             break
         }
     }
+
+    if (!snackbars.value[1]) {
+        visualisationStore.changeFluidParam(changableFluidParams.smoothingRadius, smoothingRadius.value)
+    }
 })
 
-watch(fluidDensity, () => {
+watch(densityReference, () => {
     errorMsgs.value[2] = ''
     snackbars.value[2] = false
     const rulesSet = rules[2]
     for (let i = 0; i < rulesSet.length; i++) {
         const rule = rulesSet[i]
-        const result = rule(fluidDensity.value)
+        const result = rule(densityReference.value)
         if (typeof result === 'string') {
             errorMsgs.value[2] = result
             snackbars.value[2] = true
             break
         }
     }
+
+    if (!snackbars.value[2]) {
+        visualisationStore.changeFluidParam(changableFluidParams.densityReference, densityReference.value)
+    }
 })
 
-watch(preasureConstant, () => {
+watch(pressureConstant, () => {
     errorMsgs.value[3] = ''
     snackbars.value[3] = false
     const rulesSet = rules[3]
     for (let i = 0; i < rulesSet.length; i++) {
         const rule = rulesSet[i]
-        const result = rule(preasureConstant.value)
+        const result = rule(pressureConstant.value)
         if (typeof result === 'string') {
             errorMsgs.value[3] = result
             snackbars.value[3] = true
             break
         }
+    }
+
+    if (!snackbars.value[3]) {
+        visualisationStore.changeFluidParam(changableFluidParams.pressureConstant, pressureConstant.value)
     }
 })
 
@@ -242,12 +265,24 @@ watch(fluidVelocity, () => {
             break
         }
     }
+
+    if (!snackbars.value[4]) {
+        visualisationStore.changeFluidParam(changableFluidParams.maxVelocity, fluidVelocity.value)
+    }
 })
 
 function onMouseEnter(index: number) {
     if (errorMsgs.value[index] !== '') {
         snackbars.value[index] = true
     }
+}
+
+function restoreDefault() {
+    particleSize.value = DEFAULT_PARTICLE_SIZE
+    smoothingRadius.value = DEFAULT_SMOOTHING_RADIUS
+    densityReference.value = DEFAULT_DENSITY_REFERENCE
+    pressureConstant.value = DEFAULT_PRESSURE_CONSTANT
+    fluidVelocity.value = DEFAULT_FLUID_VELOCITY
 }
 
 </script>
@@ -263,8 +298,12 @@ function onMouseEnter(index: number) {
     padding: 0px !important;
 }
 
-.padding {
+.padding8 {
     padding: 0px 8px !important;
+}
+
+.padding16 {
+    padding: 0px 16px !important;
 }
 </style>
   
