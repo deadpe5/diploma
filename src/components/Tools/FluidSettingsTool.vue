@@ -44,12 +44,12 @@
             </template>
         </v-snackbar>
 
-        <div class="text-caption ml-4">Fluid density</div>
-        <v-slider thumb-label :min="MIN_FLUID_DENSITY" :max="MAX_FLUID_DENSITY" :step="FLUID_DENSITY_STEP" @mouseover="onMouseEnter(2)"
+        <div class="text-caption ml-4">Density reference</div>
+        <v-slider thumb-label :min="MIN_DENSITY_REFERENCE" :max="MAX_DENSITY_REFERENCE" :step="DENSITY_REFERENCE_STEP" @mouseover="onMouseEnter(2)"
             v-model="fluidDensity" class="padding">
             <template v-slot:append>
                 <v-text-field v-model="fluidDensity" type="number" style="width: 100px" density="compact" hide-details
-                    :rules="rules[2]" variant="outlined" :step="FLUID_DENSITY_STEP"></v-text-field>
+                    :rules="rules[2]" variant="outlined" :step="DENSITY_REFERENCE_STEP"></v-text-field>
             </template>
         </v-slider>
         <v-snackbar v-model="snackbars[2]" :timeout="timeout" color="error">
@@ -116,9 +116,9 @@ import {
     SMOOTHING_RADIUS_STEP,
     MAX_SMOOTHING_RADIUS,
     MIN_SMOOTHING_RADIUS,
-    MIN_FLUID_DENSITY,
-    MAX_FLUID_DENSITY,
-    FLUID_DENSITY_STEP,
+    MIN_DENSITY_REFERENCE,
+    MAX_DENSITY_REFERENCE,
+    DENSITY_REFERENCE_STEP,
     MIN_PREASURE_CONSTANT,
     MAX_PREASURE_CONSTANT,
     PREASURE_CONSTANT_STEP,
@@ -133,7 +133,7 @@ const boundingBoxDepth = ref(1)
 
 const particleSize = ref((MIN_PARTICLE_SIZE + MAX_PARTICLE_SIZE) / 2)
 const smoothingRadius = ref((MIN_SMOOTHING_RADIUS + MAX_SMOOTHING_RADIUS) / 2)
-const fluidDensity = ref((MIN_FLUID_DENSITY + MAX_FLUID_DENSITY) / 2)
+const fluidDensity = ref((MIN_DENSITY_REFERENCE + MAX_DENSITY_REFERENCE) / 2)
 const preasureConstant = ref(Math.floor((MIN_PREASURE_CONSTANT + MAX_PREASURE_CONSTANT) / 2))
 const fluidVelocity = ref((MIN_FLUID_VELOCITY + MAX_FLUID_VELOCITY) / 2)
 
@@ -153,9 +153,9 @@ const rules = [
         (v: string | number) => Number(v) <= MAX_SMOOTHING_RADIUS || `Smoothing radius must be lower than ${MAX_SMOOTHING_RADIUS}`
     ],
     [
-        (v: string | number) => (!isNaN(Number(v)) && Number.isInteger(Number(v))) || 'Fluid density must be an integer',
-        (v: string | number) => Number(v) >= MIN_FLUID_DENSITY || `Fluid density must be greater than ${MIN_FLUID_DENSITY}`,
-        (v: string | number) => Number(v) <= MAX_FLUID_DENSITY || `Fluid density must be lower than ${MAX_FLUID_DENSITY}`
+        (v: string | number) => (!isNaN(Number(v)) && Number.isInteger(Number(v))) || 'Density reference must be an integer',
+        (v: string | number) => Number(v) >= MIN_DENSITY_REFERENCE || `Density reference must be greater than ${MIN_DENSITY_REFERENCE}`,
+        (v: string | number) => Number(v) <= MAX_DENSITY_REFERENCE || `Density reference must be lower than ${MAX_DENSITY_REFERENCE}`
     ],
     [
         (v: string | number) => (!isNaN(Number(v)) && Number.isInteger(Number(v))) || 'Fluid velocity must be an integer',
