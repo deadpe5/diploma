@@ -4,7 +4,7 @@ import { IParticleData } from "./types"
 import {
     DEFAULT_DENSITY_REFERENCE,
     GRAVITY,
-    DEFAULT_PREASURE_CONSTANT,
+    DEFAULT_PRESSURE_CONSTANT,
     VISCOSITY,
     MAX_ACCELERATION,
     MAX_VELOCITY,
@@ -33,7 +33,7 @@ export class FluidSimulator {
     }
 
     public densityReference: number = DEFAULT_DENSITY_REFERENCE
-    public pressureConstant: number = DEFAULT_PREASURE_CONSTANT
+    public pressureConstant: number = DEFAULT_PRESSURE_CONSTANT
     public viscosity: number = VISCOSITY
     public gravity: Vector3 = GRAVITY.clone()
     public minTimeStep: number = MIN_TIME_STEP

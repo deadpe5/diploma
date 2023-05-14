@@ -1,4 +1,4 @@
-import { Vector3 } from "@babylonjs/core"
+import { Color3, Vector3 } from "@babylonjs/core"
 
 export const MESH_DEFAULT_ALPHA = 1.0
 export const MESH_TOGGLED_ALPHA = 0.3
@@ -10,12 +10,16 @@ export enum fileTypes {
 }
 
 // Constants used in UI and simulation
+export const DEFAULT_FLUID_COLOR = new Color3(1 - 0.5, 1 - 0.2, 1 - 0.05)
+export const MAX_FLUID_COLOR_DENSITY = 2
+export const DEFAULT_FLUID_COLOR_DENSITY = 1.8
+
 export const MIN_PARTICLES_COUNT = 1000
 export const MAX_PARTICLES_COUNT = 10000
 export const PARTICLES_COUNT_STEP = 1
 export const DEFAULT_PARTICLES_COUNT = 6000
 
-export const MIN_PARTICLE_SIZE = 0.01
+export const MIN_PARTICLE_SIZE = 0.02
 export const MAX_PARTICLE_SIZE = 0.5
 export const PARTICLE_SIZE_STEP = 0.01
 export const DEFAULT_PARTICLE_SIZE = 0.08
@@ -30,10 +34,10 @@ export const MAX_DENSITY_REFERENCE = 50000
 export const DENSITY_REFERENCE_STEP = 100
 export const DEFAULT_DENSITY_REFERENCE = 20000
 
-export const MIN_PREASURE_CONSTANT = 1
-export const MAX_PREASURE_CONSTANT = 10
-export const PREASURE_CONSTANT_STEP = 1
-export const DEFAULT_PREASURE_CONSTANT = 4
+export const MIN_PRESSURE_CONSTANT = 1
+export const MAX_PRESSURE_CONSTANT = 10
+export const PRESSURE_CONSTANT_STEP = 1
+export const DEFAULT_PRESSURE_CONSTANT = 4
 
 export const MIN_FLUID_VELOCITY = 0
 export const MAX_FLUID_VELOCITY = 20
@@ -75,3 +79,11 @@ export const dir1 = new Vector3(1, -1, -1);
 export const dir2 = new Vector3(-1, -1, 1);
 export const dir3 = new Vector3(-1, 1, -1);
 export const dir4 = new Vector3(1, 1, 1);
+
+export enum changableFluidParams {
+    particleSize = 'particleSize',
+    smoothingRadius = 'smoothingRadius',
+    densityReference = 'densityReference',
+    pressureConstant = 'pressureConstant',
+    maxVelocity = 'maxVelocity'
+} 

@@ -34,24 +34,25 @@
             </v-container>
             <v-divider></v-divider>
             <v-card-title>Environment</v-card-title>
-            <v-container  class="padding">
-                <v-select label="Background" variant="solo" hide-details :items="ENVIRONMENT_NAMES" v-model="selectedEnv"></v-select>
+            <v-container class="padding">
+                <v-select label="Background" variant="solo" hide-details :items="ENVIRONMENT_NAMES"
+                    v-model="selectedEnv"></v-select>
                 <v-label class="mt-4">Box opacity</v-label>
                 <v-slider thumb-label :min="MIN_BOX_OPACITY" :max="MAX_BOX_OPACITY" :step="BOX_OPACITY_STEP"
-                @mouseover="onMouseEnterBoxOpacity" v-model="boxOpacity">
-                <template v-slot:append>
-                    <v-text-field v-model="boxOpacity" type="number" style="width: 100px" density="compact" hide-details
-                        :rules="boxRules" variant="outlined" :step="BOX_OPACITY_STEP"></v-text-field>
-                </template>
-            </v-slider>
-            <v-snackbar v-model="boxSnackbar" :timeout="timeout" color="error">
-                {{ boxErrorMsg }}
-                <template v-slot:actions>
-                    <v-btn color="white" @click="boxSnackbar = false">
-                        <font-awesome-icon icon="fa-solid fa-circle-xmark" size="2xl" />
-                    </v-btn>
-                </template>
-            </v-snackbar>
+                    @mouseover="onMouseEnterBoxOpacity" v-model="boxOpacity">
+                    <template v-slot:append>
+                        <v-text-field v-model="boxOpacity" type="number" style="width: 100px" density="compact" hide-details
+                            :rules="boxRules" variant="outlined" :step="BOX_OPACITY_STEP"></v-text-field>
+                    </template>
+                </v-slider>
+                <v-snackbar v-model="boxSnackbar" :timeout="timeout" color="error">
+                    {{ boxErrorMsg }}
+                    <template v-slot:actions>
+                        <v-btn color="white" @click="boxSnackbar = false">
+                            <font-awesome-icon icon="fa-solid fa-circle-xmark" size="2xl" />
+                        </v-btn>
+                    </template>
+                </v-snackbar>
             </v-container>
             <v-divider></v-divider>
             <v-card-title>Fluid properties</v-card-title>
@@ -78,11 +79,8 @@
                     </template>
                 </v-snackbar>
 
-                <v-btn 
-                    width="100%" class="mb-4"
-                    :color="visualisationStore.isPaused ? 'secondary-darken-1' : 'secondary' " 
-                    :text="visualisationStore.isPaused ? 'Resume' : 'Pause' "
-                    @click="pause"/>
+                <v-btn width="100%" class="mb-4" :color="visualisationStore.isPaused ? 'secondary-darken-1' : 'secondary'"
+                    :text="visualisationStore.isPaused ? 'Resume' : 'Pause'" @click="pause" />
                 <v-btn width="100%" color="primary" @click="restart">Restart</v-btn>
             </v-container>
         </v-card>
@@ -92,7 +90,7 @@
 
 import { ref, watch } from 'vue';
 import { useVisualisationStore } from '@/stores/visualisationStore';
-import type { AbstractMesh } from '@babylonjs/core';
+import { AbstractMesh, Color4 } from '@babylonjs/core';
 import {
     MIN_PARTICLES_COUNT,
     MAX_PARTICLES_COUNT,
@@ -101,7 +99,11 @@ import {
     MAX_BOX_OPACITY,
     BOX_OPACITY_STEP,
     DEFAULT_BOX_OPACITY,
-    ENVIRONMENT_NAMES
+    ENVIRONMENT_NAMES,
+    DEFAULT_PARTICLES_COUNT,
+    DEFAULT_FLUID_COLOR,
+    DEFAULT_FLUID_COLOR_DENSITY,
+    MAX_FLUID_COLOR_DENSITY
 } from '../constants'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 const visualisationStore = useVisualisationStore()
@@ -144,7 +146,7 @@ watch(boxOpacity, (value) => {
 
 const particleErrorMsg = ref('')
 const particleSnackbar = ref(false)
-const particleCount = ref((MIN_PARTICLES_COUNT + MAX_PARTICLES_COUNT) / 2)
+const particleCount = ref(DEFAULT_PARTICLES_COUNT)
 const particleRules = [
     (v: string | number) => !isNaN(Number(v)) && Number.isInteger(Number(v)) || 'Particle count must be an integer',
     (v: string | number) => Number(v) >= MIN_PARTICLES_COUNT || `Particle count must be greater than ${MIN_PARTICLES_COUNT}`,
@@ -163,6 +165,10 @@ watch(particleCount, (value) => {
             break
         }
     }
+
+    if (!particleSnackbar.value) {
+        visualisationStore.changeParticlesCount(value)
+    }
 })
 
 watch(autoRotateBox, isActive => {
@@ -177,7 +183,23 @@ watch(checkBounds, isActive => {
     }
 })
 
-const fluidColor = ref('#00E5FF')
+const fluidColor = ref(
+    {
+        r: DEFAULT_FLUID_COLOR.r * 255,
+        g: DEFAULT_FLUID_COLOR.g * 255,
+        b: DEFAULT_FLUID_COLOR.b * 255,
+        a: DEFAULT_FLUID_COLOR_DENSITY / MAX_FLUID_COLOR_DENSITY
+    }
+)
+
+watch(fluidColor, value => {
+    const newColor = new Color4(
+        value.r / 255,
+        value.g / 255,
+        value.b / 255,
+        value.a)
+    visualisationStore.changeFluidColor(newColor)
+})
 
 function selectItem(item: AbstractMesh) {
     visualisationStore.select(item)
