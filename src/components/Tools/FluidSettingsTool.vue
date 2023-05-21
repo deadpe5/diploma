@@ -3,11 +3,11 @@
         <v-card-title>Fluid Settings</v-card-title>
         <v-label class="ml-4 mb-2">Bounding Box</v-label>
         <v-text-field label="Height" variant="solo" class="ml-4 mr-4" v-model="boundingBoxHeight"
-            :rules="[v => isValidFloat(v) || 'Must be a number and greater than 0']"></v-text-field>
+            :rules="boxRules[0]" type="number"></v-text-field>
         <v-text-field label="Width" variant="solo" class="ml-4 mr-4" v-model="boundingBoxWidth"
-            :rules="[v => isValidFloat(v) || 'Must be a number and greater than 0']"></v-text-field>
+            :rules="boxRules[1]" type="number"></v-text-field>
         <v-text-field label="Depth" variant="solo" class="ml-4 mr-4" v-model="boundingBoxDepth"
-            :rules="[v => isValidFloat(v) || 'Must be a number and greater than 0']"></v-text-field>
+            :rules="boxRules[2]" type="number"></v-text-field>
 
         <v-label class="ml-4 mb-2">Fluid</v-label>
         <div class="text-caption ml-4">Particle size</div>
@@ -15,7 +15,7 @@
             @mouseover="onMouseEnter(0)" v-model="particleSize" class="padding8">
             <template v-slot:append>
                 <v-text-field v-model="particleSize" type="number" style="width: 100px" density="compact" hide-details
-                    :rules="rules[0]" variant="outlined" :step="PARTICLE_SIZE_STEP"></v-text-field>
+                    :rules="fluidRules[0]" variant="outlined" :step="PARTICLE_SIZE_STEP"></v-text-field>
             </template>
         </v-slider>
         <v-snackbar v-model="snackbars[0]" :timeout="timeout" color="error">
@@ -32,7 +32,7 @@
             @mouseover="onMouseEnter(1)" v-model="smoothingRadius" class="padding8">
             <template v-slot:append>
                 <v-text-field v-model="smoothingRadius" type="number" style="width: 100px" density="compact" hide-details
-                    :rules="rules[1]" variant="outlined" :step="SMOOTHING_RADIUS_STEP"></v-text-field>
+                    :rules="fluidRules[1]" variant="outlined" :step="SMOOTHING_RADIUS_STEP"></v-text-field>
             </template>
         </v-slider>
         <v-snackbar v-model="snackbars[1]" :timeout="timeout" color="error">
@@ -49,7 +49,7 @@
             @mouseover="onMouseEnter(2)" v-model="densityReference" class="padding8">
             <template v-slot:append>
                 <v-text-field v-model="densityReference" type="number" style="width: 100px" density="compact" hide-details
-                    :rules="rules[2]" variant="outlined" :step="DENSITY_REFERENCE_STEP"></v-text-field>
+                    :rules="fluidRules[2]" variant="outlined" :step="DENSITY_REFERENCE_STEP"></v-text-field>
             </template>
         </v-slider>
         <v-snackbar v-model="snackbars[2]" :timeout="timeout" color="error">
@@ -66,7 +66,7 @@
             @mouseover="onMouseEnter(3)" v-model="pressureConstant" class="padding8">
             <template v-slot:append>
                 <v-text-field v-model="pressureConstant" type="number" style="width: 100px" density="compact" hide-details
-                    :rules="rules[3]" variant="outlined" :step="PRESSURE_CONSTANT_STEP"></v-text-field>
+                    :rules="fluidRules[3]" variant="outlined" :step="PRESSURE_CONSTANT_STEP"></v-text-field>
             </template>
         </v-slider>
         <v-snackbar v-model="snackbars[3]" :timeout="timeout" color="error">
@@ -83,7 +83,7 @@
             @mouseover="onMouseEnter(4)" v-model="fluidVelocity" class="padding8">
             <template v-slot:append>
                 <v-text-field v-model="fluidVelocity" type="number" style="width: 100px" density="compact" hide-details
-                    :rules="rules[4]" variant="outlined" :step="FLUID_VELOCITY_STEP"></v-text-field>
+                    :rules="fluidRules[4]" variant="outlined" :step="FLUID_VELOCITY_STEP"></v-text-field>
             </template>
         </v-slider>
         <v-snackbar v-model="snackbars[4]" :timeout="timeout" color="error">
@@ -106,7 +106,6 @@
 </template>
   
 <script setup lang="ts">
-import { isValidFloat } from '@/visualisation/common';
 import { ref, watch } from 'vue';
 import {
     MIN_PARTICLE_SIZE,
@@ -130,13 +129,17 @@ import {
     DEFAULT_DENSITY_REFERENCE,
     DEFAULT_PRESSURE_CONSTANT,
     DEFAULT_FLUID_VELOCITY,
+    MIN_BOUNDING_BOX_HEIGHT,
+    MIN_BOUNDING_BOX_WIDTH,
+    MIN_BOUNDING_BOX_DEPTH
 } from '../../constants'
 import { useVisualisationStore } from '@/stores/visualisationStore';
+import { Vector3 } from '@babylonjs/core';
 const visualisationStore = useVisualisationStore()
 
-const boundingBoxHeight = ref(1)
-const boundingBoxWidth = ref(1)
-const boundingBoxDepth = ref(1)
+const boundingBoxHeight = ref(MIN_BOUNDING_BOX_HEIGHT)
+const boundingBoxWidth = ref(MIN_BOUNDING_BOX_WIDTH)
+const boundingBoxDepth = ref(MIN_BOUNDING_BOX_DEPTH)
 
 const particleSize = ref(DEFAULT_PARTICLE_SIZE)
 const smoothingRadius = ref(DEFAULT_SMOOTHING_RADIUS)
@@ -148,7 +151,50 @@ const timeout = ref(2000)
 const snackbars = ref([false, false, false, false, false])
 const errorMsgs = ref(['', '', '', '', ''])
 
-const rules = [
+const boxRules = [
+    [
+        (v: string | number) => !isNaN(Number(v)) || `Height must be a number`,
+        (v: string | number) => Number(v) >= MIN_BOUNDING_BOX_HEIGHT || `Height must be greater than ${MIN_BOUNDING_BOX_HEIGHT}`,
+    ],
+    [
+        (v: string | number) => !isNaN(Number(v)) || `Width must be a number`,
+        (v: string | number) => Number(v) >= MIN_BOUNDING_BOX_WIDTH || `Width must be greater than ${MIN_BOUNDING_BOX_WIDTH}`,
+    ],
+    [
+        (v: string | number) => !isNaN(Number(v)) || `Depth must be a number`,
+        (v: string | number) => Number(v) >= MIN_BOUNDING_BOX_DEPTH || `Depth must be greater than ${MIN_BOUNDING_BOX_DEPTH}`,
+    ],   
+]
+
+watch([boundingBoxHeight, boundingBoxWidth, boundingBoxDepth], newValue => {
+    const values = newValue.map(Number)
+    const height = values[0]
+    const width = values[1]
+    const depth = values[2]
+
+    if (
+        !boxRules[0].every(rule => rule(height) === true) ||
+        !boxRules[1].every(rule => rule(width) === true) ||
+        !boxRules[2].every(rule => rule(depth) === true)
+    ) {
+        return
+    }
+
+    const min = new Vector3(
+        -height / 2,
+        -width / 2,
+        -depth / 2
+    )
+
+    const max = new Vector3(
+        height / 2,
+        width / 2,
+        depth / 2
+    )
+    visualisationStore.changeBoxDimension(min, max)
+})
+
+const fluidRules = [
     [
         (v: string | number) => !isNaN(Number(v)) || 'Particle size must be a number',
         (v: string | number) => Number(v) >= MIN_PARTICLE_SIZE || `Particle size must be greater than ${MIN_PARTICLE_SIZE}`,
@@ -179,7 +225,7 @@ const rules = [
 watch(particleSize, () => {
     errorMsgs.value[0] = ''
     snackbars.value[0] = false
-    const rulesSet = rules[0]
+    const rulesSet = fluidRules[0]
     for (let i = 0; i < rulesSet.length; i++) {
         const rule = rulesSet[i]
         const result = rule(particleSize.value)
@@ -198,7 +244,7 @@ watch(particleSize, () => {
 watch(smoothingRadius, () => {
     errorMsgs.value[1] = ''
     snackbars.value[1] = false
-    const rulesSet = rules[1]
+    const rulesSet = fluidRules[1]
     for (let i = 0; i < rulesSet.length; i++) {
         const rule = rulesSet[i]
         const result = rule(smoothingRadius.value)
@@ -217,7 +263,7 @@ watch(smoothingRadius, () => {
 watch(densityReference, () => {
     errorMsgs.value[2] = ''
     snackbars.value[2] = false
-    const rulesSet = rules[2]
+    const rulesSet = fluidRules[2]
     for (let i = 0; i < rulesSet.length; i++) {
         const rule = rulesSet[i]
         const result = rule(densityReference.value)
@@ -236,7 +282,7 @@ watch(densityReference, () => {
 watch(pressureConstant, () => {
     errorMsgs.value[3] = ''
     snackbars.value[3] = false
-    const rulesSet = rules[3]
+    const rulesSet = fluidRules[3]
     for (let i = 0; i < rulesSet.length; i++) {
         const rule = rulesSet[i]
         const result = rule(pressureConstant.value)
@@ -255,7 +301,7 @@ watch(pressureConstant, () => {
 watch(fluidVelocity, () => {
     errorMsgs.value[4] = ''
     snackbars.value[4] = false
-    const rulesSet = rules[4]
+    const rulesSet = fluidRules[4]
     for (let i = 0; i < rulesSet.length; i++) {
         const rule = rulesSet[i]
         const result = rule(fluidVelocity.value)
@@ -278,6 +324,9 @@ function onMouseEnter(index: number) {
 }
 
 function restoreDefault() {
+    boundingBoxHeight.value = MIN_BOUNDING_BOX_HEIGHT
+    boundingBoxWidth.value = MIN_BOUNDING_BOX_WIDTH
+    boundingBoxDepth.value = MIN_BOUNDING_BOX_DEPTH
     particleSize.value = DEFAULT_PARTICLE_SIZE
     smoothingRadius.value = DEFAULT_SMOOTHING_RADIUS
     densityReference.value = DEFAULT_DENSITY_REFERENCE

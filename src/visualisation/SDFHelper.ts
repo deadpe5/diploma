@@ -15,6 +15,16 @@ export class SDFHelper {
     public static SDPlane(p: Vector3, n: Vector3, h: number) {
         return Vector3.Dot(p, n) + h
     }
+    public static SDBox(p: Vector3, b: Vector3) {
+        const q = TmpVectors.Vector3[0]
+        q.copyFromFloats(Math.abs(p.x), Math.abs(p.y), Math.abs(p.z))
+        q.subtractInPlace(b)
+
+        const tmp = Math.min(Math.max(q.x, q.y, q.z), 0)
+        q.maximizeInPlaceFromFloats(0, 0, 0)
+
+        return q.length() + tmp
+    }
 
     // TODO: replace `shape: any`
     public static ComputeSDFNormal(pos: Vector3, shape: any, normal: Vector3) {

@@ -4,11 +4,11 @@
     </v-card-title>
     <div class="d-flex flex-column mb-6">
         <v-label class="ml-4 mb-2">Dimensions</v-label>
-        <v-text-field label="Height" variant="solo" class="ml-4 mr-4" v-model="height"
+        <v-text-field label="Height" variant="solo" class="ml-4 mr-4" v-model="height" type="number"
             :rules="[v => isValidFloat(v) || 'Must be a number and greater than 0']"></v-text-field>
-        <v-text-field label="Width" variant="solo" class="ml-4 mr-4" v-model="width"
+        <v-text-field label="Width" variant="solo" class="ml-4 mr-4" v-model="width" type="number"
             :rules="[v => isValidFloat(v) || 'Must be a number and greater than 0']"></v-text-field>
-        <v-text-field label="Depth" variant="solo" class="ml-4 mr-4" v-model="depth"
+        <v-text-field label="Depth" variant="solo" class="ml-4 mr-4" v-model="depth" type="number"
             :rules="[v => isValidFloat(v) || 'Must be a number and greater than 0']"></v-text-field>
         <div class="d-flex flex-row">
             <v-btn class="ma-2 justify-start" color="secondary" @click="cancel"

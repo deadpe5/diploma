@@ -1,7 +1,7 @@
 import { MESH_DEFAULT_ALPHA, MESH_TOGGLED_ALPHA, changableFluidParams, type fileTypes } from '@/constants'
 import RenderScene from '@/visualisation/RenderScene'
 import type { IBoxOptions, ICylinderOptions, ISphereOptions, ITorusOptions } from '@/visualisation/types'
-import { Color4 } from '@babylonjs/core'
+import { Color4, Vector3 } from '@babylonjs/core'
 import type { AbstractMesh } from '@babylonjs/core/Meshes'
 import { defineStore } from 'pinia'
 
@@ -197,6 +197,12 @@ export const useVisualisationStore = defineStore('visulisationStore', {
     changeFluidParam(param: changableFluidParams, value: number) {
       if (this.renderScene) {
         this.renderScene.fluidVisualisation.changeFluidParam(param, value)
+      }
+    },
+
+    changeBoxDimension(min: Vector3, max: Vector3) {
+      if (this.renderScene) {
+        this.renderScene.fluidVisualisation.changeBoxDimension(min, max)
       }
     }
   }
