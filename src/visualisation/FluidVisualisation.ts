@@ -17,6 +17,8 @@ import {
     VertexBuffer,
     TmpVectors,
     Color4,
+    FluidRenderingObjectCustomParticles,
+    AbstractMesh,
 } from "@babylonjs/core";
 import RenderScene from "./RenderScene";
 import {
@@ -31,6 +33,9 @@ import {
     DEFAULT_SMOOTHING_RADIUS,
     MAX_ACCELERATION,
     MAX_FLUID_COLOR_DENSITY,
+    MIN_BOUNDING_BOX_DEPTH,
+    MIN_BOUNDING_BOX_HEIGHT,
+    MIN_BOUNDING_BOX_WIDTH,
     PARTICLE_RADIUS,
     SHAPE_COLLISION_RESTITUTION,
     VISCOSITY,
@@ -57,7 +62,7 @@ export class FluidVisualisation {
 
     // Collision objects
     private collisionObjectPromises: any[]
-    private collisionObjects: any[]
+    public collisionObjects: any[]
 
     // Bounding Box
     private boxMin: Vector3
@@ -118,9 +123,17 @@ export class FluidVisualisation {
         this.particleGenerator = new ParticleGenerator(this.scene)
         this.particleGenerator.particleRadius = particleRadius
 
-        this.boxMax = new Vector3(1, 1, 1)
-        this.boxMin = new Vector3(-1, -1, -1)
-        this.particleGenerator.position.y = (this.boxMin.y + this.boxMax.y) / 2
+        this.boxMax = new Vector3(
+            MIN_BOUNDING_BOX_HEIGHT / 2,
+            MIN_BOUNDING_BOX_WIDTH / 2,
+            MIN_BOUNDING_BOX_DEPTH / 2,
+        )
+        this.boxMin = new Vector3(
+            -MIN_BOUNDING_BOX_HEIGHT / 2,
+            -MIN_BOUNDING_BOX_WIDTH / 2,
+            -MIN_BOUNDING_BOX_DEPTH / 2,
+        )
+        this.particleGenerator.position = Vector3.Center(this.boxMax, this.boxMin)
 
         this.isPaused = false
 
@@ -273,7 +286,8 @@ export class FluidVisualisation {
 
         this.sceneObserver = this.scene.onBeforeRenderObservable.add(() => {
             this.fluidSimulation.currentNumParticles = Math.min(this.numParticles, this.particleGenerator!.currNumParticles)
-            this.fluidRenderObject.object.setNumParticles(this.fluidSimulation.currentNumParticles)
+                ; (this.fluidRenderObject.object as FluidRenderingObjectCustomParticles)
+                    .setNumParticles(this.fluidSimulation.currentNumParticles)
 
             if (!this.isPaused) {
                 this.fluidSimulation.update(1 / 100)
@@ -299,11 +313,30 @@ export class FluidVisualisation {
             transf: Matrix.Identity(),
             scale: 1,
             invTransf: Matrix.Identity(),
-            dragPlane: null,
             collisionRestitution,
         }
 
         const promise = Promise.resolve([null, collisionShape])
+        this.collisionObjectPromises.push(promise)
+        return promise
+    }
+
+    public addCollisionBox(box: AbstractMesh, collisionRestitution: number | undefined) {
+        const extendSize = box.getBoundingInfo().boundingBox.extendSize.clone()
+        const collisionShape = {
+            params: [extendSize],
+            sdEvaluate: SDFHelper.SDBox,
+            computeNormal: SDFHelper.ComputeSDFNormal,
+            rotation: box.rotation.clone(),
+            position: box.position.clone(),
+            mesh: box,
+            scale: 1,
+            transf: new Matrix(),
+            invTransf: new Matrix(),
+            collisionRestitution
+        }
+
+        const promise = Promise.resolve([box, collisionShape])
         this.collisionObjectPromises.push(promise)
         return promise
     }
@@ -379,6 +412,51 @@ export class FluidVisualisation {
 
         if (!value) {
             this.autoRotateBox = false
+        }
+    }
+
+    public changeBoxDimension(min: Vector3, max: Vector3) {
+        this.boxMin = min
+        this.boxMax = max
+
+        this.origCollisionPlanes[0].d = Math.abs(this.boxMax.z)
+        this.origCollisionPlanes[1].d = Math.abs(this.boxMin.z)
+        this.origCollisionPlanes[2].d = Math.abs(this.boxMin.x)
+        this.origCollisionPlanes[3].d = Math.abs(this.boxMax.x)
+        this.origCollisionPlanes[4].d = Math.abs(this.boxMax.y)
+        this.origCollisionPlanes[5].d = Math.abs(this.boxMin.y)
+        this.origCollisionPlanes[6].d = Math.abs(this.boxMin.y)
+        
+        this.collisionPlanes[0][1].params[1] = Math.abs(this.boxMax.z)
+        this.collisionPlanes[1][1].params[1] = Math.abs(this.boxMin.z)
+        this.collisionPlanes[2][1].params[1] = Math.abs(this.boxMin.x)
+        this.collisionPlanes[3][1].params[1] = Math.abs(this.boxMax.x)
+        this.collisionPlanes[4][1].params[1] = Math.abs(this.boxMax.y)
+        this.collisionPlanes[5][1].params[1] = Math.abs(this.boxMin.y)
+        this.collisionPlanes[6][1].params[1] = Math.abs(this.boxMin.y)
+
+        const quat = this.boxMesh?.rotationQuaternion
+        this.boxMesh?.dispose()
+        this.boxMeshFront?.dispose()
+
+        this.boxMesh = MeshBuilder.CreateBox('boxMesh', {
+            width: this.boxMax.x - this.boxMin.x,
+            height: this.boxMax.y - this.boxMin.y,
+            depth: this.boxMax.z - this.boxMin.z,
+        })
+        this.boxMesh.material = this.boxMaterial
+        this.boxMesh.position.x = (this.boxMax.x + this.boxMin.x) / 2
+        this.boxMesh.position.y = (this.boxMax.y + this.boxMin.y) / 2
+        this.boxMesh.position.z = (this.boxMax.z + this.boxMin.z) / 2
+        this.boxMesh.isPickable = false
+
+        this.boxMeshFront = this.boxMesh.clone('boxMeshFront')
+        this.boxMeshFront.material = this.boxMaterialFront
+        this.boxMeshFront.layerMask = 0x10000000
+
+        if (quat) {
+            this.boxMesh.rotationQuaternion = quat
+            this.boxMeshFront.rotationQuaternion = quat
         }
     }
 

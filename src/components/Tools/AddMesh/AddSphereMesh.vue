@@ -4,15 +4,15 @@
     </v-card-title>
     <div class="d-flex flex-column mb-6">
         <v-label class="ml-4 mb-2">Dimensions</v-label>
-        <v-text-field label="Diameter X" variant="solo" class="ml-4 mr-4" v-model="diameterX"
+        <v-text-field label="Diameter X" variant="solo" class="ml-4 mr-4" v-model="diameterX" type="number"
             :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']"></v-text-field>
-        <v-text-field label="Diameter Y" variant="solo" class="ml-4 mr-4" v-model="diameterY"
+        <v-text-field label="Diameter Y" variant="solo" class="ml-4 mr-4" v-model="diameterY" type="number"
             :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']"></v-text-field>
-        <v-text-field label="Diameter Z" variant="solo" class="ml-4 mr-4" v-model="diameterZ"
+        <v-text-field label="Diameter Z" variant="solo" class="ml-4 mr-4" v-model="diameterZ" type="number"
             :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']"></v-text-field>
 
         <v-label class="ml-4 mb-2">Geometry</v-label>
-        <v-text-field label="Segments count" variant="solo" class="ml-4 mr-4" v-model="segments"
+        <v-text-field label="Segments count" variant="solo" class="ml-4 mr-4" v-model="segments" type="number"
             :rules="[v => isValidInt(v, 0, 65) || 'Must be a integer and be 0 < value < 65']"></v-text-field>
 
         <div class="d-flex flex-row">

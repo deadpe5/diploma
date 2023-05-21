@@ -13,6 +13,10 @@ export enum fileTypes {
 export const RED_FPS = 15
 export const YELLOW_FPS = 30
 // Constants used in UI and simulation
+export const MIN_BOUNDING_BOX_HEIGHT = 1
+export const MIN_BOUNDING_BOX_WIDTH = 1
+export const MIN_BOUNDING_BOX_DEPTH = 1
+
 export const DEFAULT_FLUID_COLOR = new Color3(1 - 0.5, 1 - 0.2, 1 - 0.05)
 export const MAX_FLUID_COLOR_DENSITY = 2
 export const DEFAULT_FLUID_COLOR_DENSITY = 1.8
