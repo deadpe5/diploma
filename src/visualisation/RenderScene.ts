@@ -8,13 +8,10 @@ import {
   GizmoManager,
   PointerEventTypes,
   PointLight,
-  CubeTexture,
 } from '@babylonjs/core'
 import RenderCamera from './CameraWrapper'
 import { useVisualisationStore } from '@/stores/visualisationStore'
 import MeshManager from './MeshManager'
-import { FluidVisualisation } from './FluidVisualisation'
-import { ENVIRONMENT_FILENAMES, ENVIRONMENT_NAMES } from '@/constants'
 
 class RenderScene {
   private readonly canvas: HTMLCanvasElement
@@ -26,21 +23,19 @@ class RenderScene {
   private readonly visualisationStore = useVisualisationStore()
   private readonly sceneLight: HemisphericLight
   private readonly cameraLight: PointLight
-  private readonly _fluidVisualisation: FluidVisualisation
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
     this._engine = new Engine(this.canvas)
     this._scene = new Scene(this._engine)
     this._scene.useRightHandedSystem = true
-    this.setEnvironment()
     this._gizmoManager = new GizmoManager(this._scene, 2)
     this._gizmoManager.positionGizmoEnabled = true
     this._gizmoManager.rotationGizmoEnabled = true
     this._gizmoManager.enableAutoPicking = false
 
     this.canvas.addEventListener('wheel', (evt) => evt.preventDefault())
-    this._scene.clearColor = new Color4(1, 1, 1, 1)
+    this._scene.clearColor = new Color4(0.7, 0.7, 0.7, 1)
 
     this._camera = new RenderCamera(this._scene, this.canvas)
 
@@ -51,12 +46,6 @@ class RenderScene {
     this.cameraLight.intensity = 1
 
     this._meshManager = new MeshManager(this._scene)
-
-    this._fluidVisualisation = new FluidVisualisation(this)
-    this._fluidVisualisation.run()
-    this._scene.onDisposeObservable.add(() => {
-      this._fluidVisualisation.dispose()
-    })
 
     this._engine.runRenderLoop(() => {
       this._scene.render()
@@ -71,10 +60,6 @@ class RenderScene {
     }
 
     this.addOnPointerObservable()
-  }
-
-  public get fluidVisualisation() {
-    return this._fluidVisualisation
   }
 
   public get scene(): Scene {
@@ -122,14 +107,6 @@ class RenderScene {
         this._camera.rotateCamera(PI / 4, PI / 3)
         return
     }
-  }
-
-  setEnvironment(env?: string) {
-    const envFileName = env ? ENVIRONMENT_FILENAMES[ENVIRONMENT_NAMES.indexOf(env)] : ENVIRONMENT_FILENAMES[0]
-
-    const hdrTexture = CubeTexture.CreateFromPrefilteredData(`/environments/${envFileName}`, this._scene);
-    this._scene.environmentTexture = hdrTexture
-    this._scene.createDefaultSkybox(this._scene.environmentTexture);
   }
 
   private addOnPointerObservable() {

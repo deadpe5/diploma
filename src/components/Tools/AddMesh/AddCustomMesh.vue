@@ -11,9 +11,9 @@
         <v-btn class="ma-2" color="primary" @click="onButtonClick(fileTypes.OBJ)" :disabled="visualisationStore.isLoading">
             Load OBJ model
         </v-btn>
-        <v-btn class="ma-2" color="primary" @click="onButtonClick(fileTypes.glTF)" :disabled="visualisationStore.isLoading">
+        <!-- <v-btn class="ma-2" color="primary" @click="onButtonClick(fileTypes.glTF)" :disabled="visualisationStore.isLoading">
             Load glTF model
-        </v-btn>
+        </v-btn> -->
         <v-btn class="ma-2 justify-start" color="secondary" :to="{ name: 'addMeshTool' }" :disabled="visualisationStore.isLoading" :loading="visualisationStore.isLoading">
             <v-icon class="v-btn__prepend" icon="mdi-arrow-left" />
             Cancel

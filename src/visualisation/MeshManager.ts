@@ -104,7 +104,7 @@ export default class MeshManager {
 
     public async importMeshFromFile(fileType: fileTypes, url: string) {
         const result = await SceneLoader.ImportMeshAsync('', url, '', this.scene, null, fileType)
-        if (fileType === fileTypes.STL) {
+        if ([fileTypes.OBJ, fileTypes.STL].includes(fileType)) {
             for (const mesh of result.meshes) {
                 const positions = mesh.getPositionData()
                 const indices = mesh.getIndices()

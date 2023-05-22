@@ -8,7 +8,7 @@ class RenderCamera extends ArcRotateCamera{
     super('camera', Math.PI / 4, Math.PI / 3, 10, Vector3.Zero(), scene)
     this.fov = (60 * Math.PI) / 180
     this.lowerRadiusLimit = 1.618
-    this.upperRadiusLimit = this.lowerRadiusLimit * 20
+    // this.upperRadiusLimit = this.lowerRadiusLimit * 20
     this.attachControl(canvas, true)
     this.inputs.remove(this.inputs.attached.keyboard);
   }
