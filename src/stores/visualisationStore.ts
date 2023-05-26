@@ -1,4 +1,4 @@
-import type { fileTypes } from '@/constants'
+import { RED_FPS, YELLOW_FPS, fileTypes } from '@/constants'
 import RenderScene from '@/visualisation/RenderScene'
 import type { IBoxOptions, ICylinderOptions, ISphereOptions, ITorusOptions } from '@/visualisation/types'
 import type { AbstractMesh } from '@babylonjs/core/Meshes'
@@ -12,10 +12,12 @@ export const useVisualisationStore = defineStore('visulisationStore', {
       meshToAdd: null as AbstractMesh | null,
       deselectable: true,
       isLoading: false,
-
+      fps: 0,
+      fpsCounterColor: 'green',
+      isFPSCounterEnabled: false
     }
   },
-
+  
   actions: {
     init(canvas: HTMLCanvasElement) {
       this.renderScene = new RenderScene(canvas)
@@ -134,6 +136,21 @@ export const useVisualisationStore = defineStore('visulisationStore', {
         this.renderScene.getGizmoManager().attachToMesh(meshToSelect)
         this.selectedMesh = meshToSelect
       }
+    },
+
+    setFPS(newFPS: number) {
+      this.fps = newFPS
+      if (this.fps < RED_FPS) {
+        this.fpsCounterColor = 'red'
+      } else if (this.fps < YELLOW_FPS) {
+        this.fpsCounterColor = 'orange'
+      } else {
+        this.fpsCounterColor = 'green'
+      }
+    },
+
+    toggleFPSCounter() {
+      this.isFPSCounterEnabled = !this.isFPSCounterEnabled
     }
   }
 })

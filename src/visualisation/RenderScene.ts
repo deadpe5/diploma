@@ -8,7 +8,7 @@ import {
   GizmoManager,
   PointerEventTypes,
   PointLight,
-  BoundingInfo
+  KeyboardEventTypes,
 } from '@babylonjs/core'
 import RenderCamera from './CameraWrapper'
 import { useVisualisationStore } from '@/stores/visualisationStore'
@@ -50,7 +50,15 @@ class RenderScene {
     this.meshManager.addTestCube()
 
     this.engine.runRenderLoop(() => {
+      const fps = this.engine.getFps()
+      this.visualisationStore.setFPS(fps)
       this.scene.render()
+    })
+
+    this.scene.onKeyboardObservable.add((kbInfo) => {
+      if (kbInfo.type === KeyboardEventTypes.KEYUP && kbInfo.event.code === 'Backquote') {
+        this.visualisationStore.toggleFPSCounter()
+      }
     })
 
     if (window) {
