@@ -84,11 +84,14 @@ export const useVisualisationStore = defineStore('visulisationStore', {
     disposeMeshToAdd() {
       if (this.renderScene) {
         this.renderScene.meshManager.disposeMeshToAdd()
+        this.zoomToFit()
       }
     },
 
     resetMeshToAdd() {
       if (this.meshToAdd) {
+        this.meshToAdd.position = Vector3.Zero()
+        this.zoomToFit()
         this.sceneItems.push(this.meshToAdd)
         this.meshToAdd = null
       }
@@ -156,8 +159,9 @@ export const useVisualisationStore = defineStore('visulisationStore', {
     removeSelectedSceneItem() {
       if (this.selectedMesh) {
         const selectedMeshId = this.selectedMesh.id
-        const newArray = this.sceneItems.filter(item => item.id !== selectedMeshId)
-        this.sceneItems = newArray
+        const selectedMeshIndex = this.sceneItems.findIndex(item => item.id === selectedMeshId)
+        this.sceneItems.splice(selectedMeshIndex, 1)
+        this.renderScene?.fluidVisualisation.disposeCollisionObjectById(selectedMeshId)
         this.selectedMesh.dispose()
         this.deselect()
       }
@@ -222,6 +226,24 @@ export const useVisualisationStore = defineStore('visulisationStore', {
       if (this.renderScene) {
         this.renderScene.fluidVisualisation.changeBoxDimension(min, max)
       }
-    }
+    },
+
+    async addCollisionBox(box: AbstractMesh, collisionRestitution?: number) {
+      if (this.renderScene) {
+        await this.renderScene.fluidVisualisation.addCollisionBox(box, collisionRestitution)
+      }
+    },
+
+    async addCollisionSphere(sphere: AbstractMesh, collisionRestitution?: number) {
+      if (this.renderScene) {
+        await this.renderScene.fluidVisualisation.addCollisionSphere(sphere, collisionRestitution)
+      }
+    },
+    
+    async addCollisionCylinder(cylinder: AbstractMesh, collisionRestitution?: number) {
+      if (this.renderScene) {
+        await this.renderScene.fluidVisualisation.addCollisionCylinder(cylinder, collisionRestitution)
+      }
+    },
   }
 })

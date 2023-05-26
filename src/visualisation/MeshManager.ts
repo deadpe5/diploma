@@ -17,7 +17,7 @@ import { fileTypes } from '../constants'
 import '@babylonjs/loaders/STL'
 import '@babylonjs/loaders/OBJ'
 import '@babylonjs/loaders/glTF'
-import type { IBoxOptions, ICylinderOptions, ISphereOptions, ITorusOptions } from './types'
+import type { IBoxOptions, ICylinderMetadata, ICylinderOptions, ISphereMetadata, ISphereOptions, ITorusOptions } from './types'
 import { v4 as uuid } from 'uuid'
 
 export default class MeshManager {
@@ -151,6 +151,7 @@ export default class MeshManager {
         const diameterY = options.diameterY
         const diameterZ = options.diameterZ
         const segments = options.segments
+        const radius = Math.min(diameterX, diameterY, diameterZ) / 2
 
         const sphere = MeshBuilder.CreateSphere('Sphere',
             {
@@ -161,6 +162,10 @@ export default class MeshManager {
             }, this.scene)
         sphere.id = uuid()
         sphere.material = this.defaultMaterial.clone('SphereMaterial')
+        sphere.metadata = {
+            radius
+        } as ISphereMetadata
+
         this.visualisationStore.meshToAdd = sphere
     }
 
@@ -171,7 +176,7 @@ export default class MeshManager {
         const diameterBottom = options.diameterBottom
         const height = options.height
         const segments = options.segments
-
+        const radius = Math.min(diameterTop, diameterBottom) / 2
         const cylinder = MeshBuilder.CreateCylinder('Cylinder',
             {
                 diameterTop: diameterTop,
@@ -181,6 +186,11 @@ export default class MeshManager {
             }, this.scene)
         cylinder.id = uuid()
         cylinder.material = this.defaultMaterial.clone('CylinderMaterial')
+        cylinder.metadata = {
+            radius: radius,
+            height: height,
+            segments: segments
+        } as ICylinderMetadata
         this.visualisationStore.meshToAdd = cylinder
     }
 

@@ -84,21 +84,24 @@ class RenderCamera extends ArcRotateCamera{
   }
 
   public zoomToFitAddMesh() {
-    if (!this.visualisationStore.meshToAdd) {
+    const meshToAdd = this.visualisationStore.meshToAdd
+    if (!meshToAdd) {
       return
     }
 
-    const boundingSphere = this.visualisationStore.meshToAdd.getBoundingInfo().boundingSphere
+    meshToAdd.position.y = 1000
+    const boundingSphere = meshToAdd.getBoundingInfo().boundingSphere
     const aspectRatio = this.getScene().getEngine().getAspectRatio(this)
     let halfMinFov = this.fov / 2
     if (aspectRatio < 1) {
       halfMinFov = Math.atan(aspectRatio * Math.tan(halfMinFov))
     }
-    const viewRadius = Math.abs(boundingSphere.radiusWorld / Math.sin(halfMinFov))
+    const viewRadius = 1.618 * Math.abs(boundingSphere.radiusWorld / Math.sin(halfMinFov))
     const currentAlpha = this.alpha
     const currentBeta = this.beta
     
-    this.setTarget(boundingSphere.centerWorld)
+    this.setTarget(meshToAdd.position.clone())
+
     this.alpha = currentAlpha
     this.beta = currentBeta
     this.radius = viewRadius

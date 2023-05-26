@@ -15,6 +15,7 @@ export class SDFHelper {
     public static SDPlane(p: Vector3, n: Vector3, h: number) {
         return Vector3.Dot(p, n) + h
     }
+
     public static SDBox(p: Vector3, b: Vector3) {
         const q = TmpVectors.Vector3[0]
         q.copyFromFloats(Math.abs(p.x), Math.abs(p.y), Math.abs(p.z))
@@ -24,6 +25,18 @@ export class SDFHelper {
         q.maximizeInPlaceFromFloats(0, 0, 0)
 
         return q.length() + tmp
+    }
+
+    public static SDSphere(p: Vector3, s: number) {
+        return p.length() - s
+    }
+
+    static SDVerticalCylinder(p: Vector3, r: number, h: number) {
+        const dx = Math.abs(Math.sqrt(p.x * p.x + p.z * p.z)) - r;
+        const dy = Math.abs(p.y) - h / 2;
+        const dx2 = Math.max(dx, 0);
+        const dy2 = Math.max(dy, 0);
+        return (Math.min(Math.max(dx, dy), 0.0) + Math.sqrt(dx2 * dx2 + dy2 * dy2));
     }
 
     // TODO: replace `shape: any`

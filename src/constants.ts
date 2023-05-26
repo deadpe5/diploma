@@ -12,6 +12,10 @@ export enum fileTypes {
 // FPS Counter
 export const RED_FPS = 15
 export const YELLOW_FPS = 30
+
+// Add Mesh constants
+export const DEFAULT_SIZE_STEP = 0.1
+
 // Constants used in UI and simulation
 export const MIN_BOUNDING_BOX_HEIGHT = 1
 export const MIN_BOUNDING_BOX_WIDTH = 1

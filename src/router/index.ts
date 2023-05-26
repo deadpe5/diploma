@@ -39,7 +39,7 @@ enum RoutesPath {
 }
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(),
   routes: [
     {
       name: RoutesName.Root,

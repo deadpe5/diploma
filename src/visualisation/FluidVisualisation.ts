@@ -44,6 +44,7 @@ import {
 import { SDFHelper } from "./SDFHelper";
 import { ParticleGenerator } from "./ParticleGenerator";
 import { FluidSimulator } from "./FluidSimulator";
+import { ICylinderMetadata, ISphereMetadata } from "./types";
 
 export class FluidVisualisation {
     // Rendering
@@ -62,7 +63,7 @@ export class FluidVisualisation {
 
     // Collision objects
     private collisionObjectPromises: any[]
-    public collisionObjects: any[]
+    private collisionObjects: any[]
 
     // Bounding Box
     private boxMin: Vector3
@@ -321,7 +322,7 @@ export class FluidVisualisation {
         return promise
     }
 
-    public addCollisionBox(box: AbstractMesh, collisionRestitution: number | undefined) {
+    public async addCollisionBox(box: AbstractMesh, collisionRestitution?: number) {
         const extendSize = box.getBoundingInfo().boundingBox.extendSize.clone()
         const collisionShape = {
             params: [extendSize],
@@ -338,6 +339,49 @@ export class FluidVisualisation {
 
         const promise = Promise.resolve([box, collisionShape])
         this.collisionObjectPromises.push(promise)
+        this.collisionObjects.push(await promise)
+        return promise
+    }
+
+    public async addCollisionSphere(sphere: AbstractMesh, collisionRestitution?: number) {
+        const { radius } = sphere.metadata as ISphereMetadata
+        const collisionShape = {
+            params: [radius],
+            sdEvaluate: SDFHelper.SDSphere,
+            computeNormal: SDFHelper.ComputeSDFNormal,
+            rotation: sphere.rotation.clone(),
+            position: sphere.position.clone(),
+            mesh: sphere,
+            scale: 1,
+            transf: new Matrix(),
+            invTransf: new Matrix(),
+            collisionRestitution
+        }
+
+        const promise = Promise.resolve([sphere, collisionShape])
+        this.collisionObjectPromises.push(promise)
+        this.collisionObjects.push(await promise)
+        return promise
+    }
+
+    public async addCollisionCylinder(cylinder: AbstractMesh, collisionRestitution?: number) {
+        const { radius, height, segments } = cylinder.metadata as ICylinderMetadata
+        const collisionShape = {
+            params: [radius, height, segments],
+            sdEvaluate: SDFHelper.SDVerticalCylinder,
+            computeNormal: SDFHelper.ComputeSDFNormal,
+            rotation: cylinder.rotation.clone(),
+            position: cylinder.position.clone(),
+            mesh: cylinder,
+            scale: 1,
+            transf: new Matrix(),
+            invTransf: new Matrix(),
+            collisionRestitution
+        }
+
+        const promise = Promise.resolve([cylinder, collisionShape])
+        this.collisionObjectPromises.push(promise)
+        this.collisionObjects.push(await promise)
         return promise
     }
 
@@ -504,7 +548,7 @@ export class FluidVisualisation {
 
     public dispose() {
         while (this.collisionObjects.length > 1) {
-            this.disposeCollisionObject(0)
+            this.disposeCollisionObjectByIndex(0)
         }
         this.scene.onBeforeRenderObservable.remove(this.sceneRenderObserver)
         this.scene.onBeforeRenderObservable.remove(this.sceneObserver)
@@ -515,12 +559,21 @@ export class FluidVisualisation {
         this.boxMaterialFront?.dispose()
     }
 
-    public disposeCollisionObject(index: number) {
+    public disposeCollisionObjectByIndex(index: number) {
+        if (index < 0 || index >= this.collisionObjects.length) {
+            return
+        }
+
         const shape = this.collisionObjects[index][1]
         shape?.mesh?.material?.dispose()
         shape?.mesh?.dispose()
         this.collisionObjects.splice(index, 1)
         this.collisionObjectPromises.splice(index, 1)
+    }
+
+    public disposeCollisionObjectById(id: string) {
+        const index = this.collisionObjects.findIndex(item => item[0] && item[0].id === id)
+        this.disposeCollisionObjectByIndex(index)
     }
 
     private async generateParticles(regenerateAll: boolean = true) {

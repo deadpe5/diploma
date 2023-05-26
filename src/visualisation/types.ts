@@ -32,3 +32,13 @@ export interface IParticleData {
     accelY: number,
     accelZ: number
 }
+
+export interface ISphereMetadata {
+    radius: number
+}
+
+export interface ICylinderMetadata {
+    radius: number,
+    height: number,
+    segments: number
+}

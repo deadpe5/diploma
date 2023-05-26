@@ -5,11 +5,11 @@
     <div class="d-flex flex-column mb-6">
         <v-label class="ml-4 mb-2">Dimensions</v-label>
         <v-text-field label="Diameter X" variant="solo" class="ml-4 mr-4" v-model="diameterX" type="number"
-            :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']"></v-text-field>
+            :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']" :step="DEFAULT_SIZE_STEP"></v-text-field>
         <v-text-field label="Diameter Y" variant="solo" class="ml-4 mr-4" v-model="diameterY" type="number"
-            :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']"></v-text-field>
+            :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']" :step="DEFAULT_SIZE_STEP"></v-text-field>
         <v-text-field label="Diameter Z" variant="solo" class="ml-4 mr-4" v-model="diameterZ" type="number"
-            :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']"></v-text-field>
+            :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']" :step="DEFAULT_SIZE_STEP"></v-text-field>
 
         <v-label class="ml-4 mb-2">Geometry</v-label>
         <v-text-field label="Segments count" variant="solo" class="ml-4 mr-4" v-model="segments" type="number"
@@ -36,6 +36,8 @@ import { ref, onMounted, watch, onBeforeUnmount } from 'vue'
 import { isValidFloat, isValidInt } from '@/visualisation/common'
 import { useVisualisationStore } from '@/stores/visualisationStore'
 import type { ISphereOptions } from '@/visualisation/types';
+import { AbstractMesh } from '@babylonjs/core/Meshes';
+import { DEFAULT_SIZE_STEP } from '@/constants'
 
 const diameterX = ref(1)
 const diameterY = ref(1)
@@ -86,6 +88,8 @@ function cancel() {
 
 function confirm() {
     visualisationStore.resetMeshToAdd()
+    const sphere = visualisationStore.sceneItems.at(-1) as AbstractMesh
+    visualisationStore.addCollisionSphere(sphere)
 }
 
 function confirmButtonDisabled(): boolean {
