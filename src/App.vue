@@ -9,6 +9,7 @@ import SideBar from './components/SideBar.vue';
 <template>
   <v-app>
     <HeaderMenu />
+    <FPSCounter />
     <BabylonScene />
     <ToolBar />
     <SideBar />
