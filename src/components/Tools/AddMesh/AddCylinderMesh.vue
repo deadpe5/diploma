@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, onBeforeUnmount } from 'vue'
 import { isValidFloat, isValidInt } from '@/visualisation/common'
 import { useVisualisationStore } from '@/stores/visualisationStore'
 import type { ICylinderOptions } from '@/visualisation/types';
@@ -54,6 +54,11 @@ onMounted(() => {
 
     visualisationStore.addCylinderToScene(options)
     visualisationStore.zoomToFitAddMesh()
+    visualisationStore.deselect()
+})
+
+onBeforeUnmount(() => {
+    visualisationStore.disposeMeshToAdd()
     visualisationStore.deselect()
 })
 

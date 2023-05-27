@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, onBeforeUnmount } from 'vue'
 import { useVisualisationStore } from '@/stores/visualisationStore'
 import type { IBoxOptions } from '@/visualisation/types';
 import { isValidFloat } from '@/visualisation/common'
@@ -46,6 +46,11 @@ onMounted(() => {
 
     visualisationStore.addBoxToScene(options)
     visualisationStore.zoomToFitAddMesh()
+    visualisationStore.deselect()
+})
+
+onBeforeUnmount(() => {
+    visualisationStore.disposeMeshToAdd()
     visualisationStore.deselect()
 })
 
