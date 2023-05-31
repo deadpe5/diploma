@@ -17,7 +17,8 @@ import { fileTypes } from '../constants'
 import '@babylonjs/loaders/STL'
 import '@babylonjs/loaders/OBJ'
 import '@babylonjs/loaders/glTF'
-import type { IBoxOptions, ICylinderOptions, ISphereOptions, ITorusOptions } from './types'
+import type { IBoxOptions, ICylinderMetadata, ICylinderOptions, ISphereMetadata, ISphereOptions, ITorusOptions } from './types'
+import { v4 as uuid } from 'uuid'
 
 export default class MeshManager {
     private readonly scene: Scene
@@ -95,8 +96,10 @@ export default class MeshManager {
             wrap: true
         }
 
-        const box = MeshBuilder.CreateBox('box', options, this.scene)
+        const box = MeshBuilder.CreateBox('Test cube', options, this.scene)
         box.material = material
+        box.id = uuid()
+        this.visualisationStore.sceneItems.push(box)
     }
 
     public async importMeshFromFile(fileType: fileTypes, url: string) {
@@ -114,8 +117,13 @@ export default class MeshManager {
                 vertexData.normals = normals
                 vertexData.applyToMesh(mesh as Mesh)
 
-                mesh.material = this.defaultMaterial
+                mesh.material = this.defaultMaterial.clone('STLMaterial')
             }
+        }
+
+        for (const mesh of result.meshes) {
+            mesh.id = uuid()
+            this.visualisationStore.sceneItems.push(mesh)
         }
     }
 
@@ -125,13 +133,14 @@ export default class MeshManager {
         const height = options.height
         const width = options.width
         const depth = options.depth
-        const box = MeshBuilder.CreateBox('box',
+        const box = MeshBuilder.CreateBox('Box',
             {
                 height: height,
                 width: width,
                 depth: depth
             }, this.scene)
-        box.material = this.defaultMaterial
+        box.id = uuid()
+        box.material = this.defaultMaterial.clone('BoxMaterial')
         this.visualisationStore.meshToAdd = box
     }
 
@@ -142,15 +151,21 @@ export default class MeshManager {
         const diameterY = options.diameterY
         const diameterZ = options.diameterZ
         const segments = options.segments
+        const radius = Math.min(diameterX, diameterY, diameterZ) / 2
 
-        const sphere = MeshBuilder.CreateSphere('sphere',
+        const sphere = MeshBuilder.CreateSphere('Sphere',
             {
                 diameterX: diameterX,
                 diameterY: diameterY,
                 diameterZ: diameterZ,
                 segments: segments
             }, this.scene)
-        sphere.material = this.defaultMaterial
+        sphere.id = uuid()
+        sphere.material = this.defaultMaterial.clone('SphereMaterial')
+        sphere.metadata = {
+            radius
+        } as ISphereMetadata
+
         this.visualisationStore.meshToAdd = sphere
     }
 
@@ -161,15 +176,21 @@ export default class MeshManager {
         const diameterBottom = options.diameterBottom
         const height = options.height
         const segments = options.segments
-
-        const cylinder = MeshBuilder.CreateCylinder('cylinder',
+        const radius = Math.min(diameterTop, diameterBottom) / 2
+        const cylinder = MeshBuilder.CreateCylinder('Cylinder',
             {
                 diameterTop: diameterTop,
                 diameterBottom: diameterBottom,
                 height: height,
                 tessellation: segments,
             }, this.scene)
-        cylinder.material = this.defaultMaterial
+        cylinder.id = uuid()
+        cylinder.material = this.defaultMaterial.clone('CylinderMaterial')
+        cylinder.metadata = {
+            radius: radius,
+            height: height,
+            segments: segments
+        } as ICylinderMetadata
         this.visualisationStore.meshToAdd = cylinder
     }
 
@@ -180,13 +201,14 @@ export default class MeshManager {
         const thickness = options.thickness
         const segments = options.segments
 
-        const torus = MeshBuilder.CreateTorus('torus',
+        const torus = MeshBuilder.CreateTorus('Torus',
             {
                 diameter: diameter,
                 thickness: thickness,
                 tessellation: segments,
             }, this.scene)
-        torus.material = this.defaultMaterial
+        torus.id = uuid()
+        torus.material = this.defaultMaterial.clone('TorusMaterial')
         this.visualisationStore.meshToAdd = torus
     }
 

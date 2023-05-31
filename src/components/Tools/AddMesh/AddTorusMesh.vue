@@ -4,17 +4,17 @@
     </v-card-title>
     <div class="d-flex flex-column mb-6">
         <v-label class="ml-4 mb-2">Dimensions</v-label>
-        <v-text-field label="Diameter" variant="solo" class="ml-4 mr-4" v-model="diameter"
+        <v-text-field label="Diameter" variant="solo" class="ml-4 mr-4" v-model="diameter" type="number"
             :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']"></v-text-field>
-        <v-text-field label="Thickness" variant="solo" class="ml-4 mr-4" v-model="thickness"
+        <v-text-field label="Thickness" variant="solo" class="ml-4 mr-4" v-model="thickness" type="number"
             :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']"></v-text-field>
         
         <v-label class="ml-4 mb-2">Geometry</v-label>
-        <v-text-field label="Segments count" variant="solo" class="ml-4 mr-4" v-model="segments"
+        <v-text-field label="Segments count" variant="solo" class="ml-4 mr-4" v-model="segments" type="number"
             :rules="[v => isValidInt(v, 2, 65) || 'Must be a integer and be 2 < value < 65']"></v-text-field>
 
         <div class="d-flex flex-row">
-            <v-btn class="ma-2 justify-start" color="secondary" variant="outlined" :to="{ name: 'addMeshTool' }"
+            <v-btn class="ma-2 justify-start" color="secondary" :to="{ name: 'addMeshTool' }"
             @click="cancel">
                 <v-icon class="v-btn__prepend" icon="mdi-arrow-left" />
                 Cancel
@@ -48,6 +48,7 @@ onMounted(() => {
         segments: segments.value
     }
 
+    visualisationStore.selectable = false
     visualisationStore.addTorusToScene(options)
     visualisationStore.zoomToFitAddMesh()
     visualisationStore.deselect()
@@ -55,6 +56,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     visualisationStore.disposeMeshToAdd()
+    visualisationStore.selectable = true
     visualisationStore.deselect()
 })
 

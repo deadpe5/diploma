@@ -5,10 +5,12 @@ class RenderCamera extends ArcRotateCamera{
   private readonly visualisationStore = useVisualisationStore()
 
   constructor(scene: Scene, canvas: HTMLCanvasElement) {
-    super('camera', -Math.PI / 4, Math.PI / 3, 10, Vector3.Zero(), scene)
-    this.upVector = new Vector3(0, 0, 1)
+    super('camera', Math.PI / 4, Math.PI / 3, 10, Vector3.Zero(), scene)
+    this.fov = (60 * Math.PI) / 180
     this.lowerRadiusLimit = 1.618
+    this.upperRadiusLimit = this.lowerRadiusLimit * 20
     this.attachControl(canvas, true)
+    this.inputs.remove(this.inputs.attached.keyboard);
   }
 
   public rotateCamera(alpha: number, beta: number) {
@@ -51,10 +53,15 @@ class RenderCamera extends ArcRotateCamera{
     let maxVec = new Vector3(-Infinity, -Infinity, -Infinity);
     let minVec = new Vector3(Infinity, Infinity, Infinity);
 
-    for (const mesh of this.getScene().meshes) {
-      const meshBoundingBox = mesh.getBoundingInfo().boundingBox
-      minVec = Vector3.Minimize(meshBoundingBox.minimumWorld, minVec)
-      maxVec = Vector3.Maximize(meshBoundingBox.maximumWorld, maxVec)
+    if (this.visualisationStore.sceneItems.length !== 0) {
+      for (const mesh of this.visualisationStore.sceneItems) {
+        const meshBoundingBox = mesh.getBoundingInfo().boundingBox
+        minVec = Vector3.Minimize(meshBoundingBox.minimumWorld, minVec)
+        maxVec = Vector3.Maximize(meshBoundingBox.maximumWorld, maxVec)
+      }
+    } else {
+      minVec = Vector3.One().scale(-1)
+      maxVec = Vector3.One()
     }
 
     const sceneBoundingInfo = new BoundingInfo(minVec, maxVec)
@@ -77,21 +84,24 @@ class RenderCamera extends ArcRotateCamera{
   }
 
   public zoomToFitAddMesh() {
-    if (!this.visualisationStore.meshToAdd) {
+    const meshToAdd = this.visualisationStore.meshToAdd
+    if (!meshToAdd) {
       return
     }
 
-    const boundingSphere = this.visualisationStore.meshToAdd.getBoundingInfo().boundingSphere
+    meshToAdd.position.y = 1000
+    const boundingSphere = meshToAdd.getBoundingInfo().boundingSphere
     const aspectRatio = this.getScene().getEngine().getAspectRatio(this)
     let halfMinFov = this.fov / 2
     if (aspectRatio < 1) {
       halfMinFov = Math.atan(aspectRatio * Math.tan(halfMinFov))
     }
-    const viewRadius = Math.abs(boundingSphere.radiusWorld / Math.sin(halfMinFov))
+    const viewRadius = 1.618 * Math.abs(boundingSphere.radiusWorld / Math.sin(halfMinFov))
     const currentAlpha = this.alpha
     const currentBeta = this.beta
     
-    this.setTarget(boundingSphere.centerWorld)
+    this.setTarget(meshToAdd.position.clone())
+
     this.alpha = currentAlpha
     this.beta = currentBeta
     this.radius = viewRadius

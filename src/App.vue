@@ -3,14 +3,17 @@ import BabylonScene from './components/BabylonScene.vue'
 import FPSCounter from './components/FPSCounter.vue';
 import HeaderMenu from './components/HeaderMenu.vue'
 import ToolBar from './components/Tools/ToolBar.vue';
+import SideBar from './components/SideBar.vue';
 </script>
 
 <template>
-  <HeaderMenu />
-  <BabylonScene />
-  <FPSCounter />
-  <ToolBar />
+  <v-app>
+    <HeaderMenu />
+    <FPSCounter />
+    <BabylonScene />
+    <ToolBar />
+    <SideBar />
+  </v-app>
 </template>
 
-<style>
-</style>
+<style></style>
