@@ -11,7 +11,7 @@ import {
   KeyboardEventTypes,
   CubeTexture,
 } from '@babylonjs/core'
-import RenderCamera from './CameraWrapper'
+import RenderCamera from './RenderCamera'
 import { useVisualisationStore } from '@/stores/visualisationStore'
 import MeshManager from './MeshManager'
 import { FluidVisualisation } from './FluidVisualisation'
@@ -145,6 +145,10 @@ class RenderScene {
     let pointerX = 0
     let pointerY = 0
     this._scene.onPointerObservable.add((evt) => {
+      if (!this.visualisationStore.selectable) {
+        return
+      }
+
       if (evt.type === PointerEventTypes.POINTERDOWN) {
         pointerX = Math.round(evt.event.clientX)
         pointerY = Math.round(evt.event.clientY)

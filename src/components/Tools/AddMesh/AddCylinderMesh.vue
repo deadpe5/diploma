@@ -53,6 +53,7 @@ onMounted(() => {
         segments: segments.value
     }
 
+    visualisationStore.selectable = false
     visualisationStore.addCylinderToScene(options)
     visualisationStore.zoomToFitAddMesh()
     visualisationStore.deselect()
@@ -60,6 +61,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     visualisationStore.disposeMeshToAdd()
+    visualisationStore.selectable = true
     visualisationStore.deselect()
 })
 

@@ -82,6 +82,7 @@ export class FluidVisualisation {
     private prevTransform: Matrix
 
     private isPaused: boolean
+    private checkBounds: boolean
 
     constructor(renderScene: RenderScene) {
         this.renderScene = renderScene
@@ -137,6 +138,7 @@ export class FluidVisualisation {
         this.particleGenerator.position = Vector3.Center(this.boxMax, this.boxMin)
 
         this.isPaused = false
+        this.checkBounds = true
 
         this.collisionObjectPromises = []
         this.collisionObjects = []
@@ -445,6 +447,7 @@ export class FluidVisualisation {
     }
 
     public onCheckBounds(value: boolean) {
+        this.checkBounds = value
         this.boxMesh?.setEnabled(value)
         this.boxMeshFront?.setEnabled(value)
 
@@ -497,6 +500,11 @@ export class FluidVisualisation {
         this.boxMeshFront = this.boxMesh.clone('boxMeshFront')
         this.boxMeshFront.material = this.boxMaterialFront
         this.boxMeshFront.layerMask = 0x10000000
+
+        if (!this.checkBounds) {
+            this.boxMesh?.setEnabled(this.checkBounds)
+            this.boxMeshFront?.setEnabled(this.checkBounds)
+        }
 
         if (quat) {
             this.boxMesh.rotationQuaternion = quat

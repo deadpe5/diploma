@@ -137,15 +137,15 @@ import { useVisualisationStore } from '@/stores/visualisationStore';
 import { Vector3 } from '@babylonjs/core';
 const visualisationStore = useVisualisationStore()
 
-const boundingBoxHeight = ref(MIN_BOUNDING_BOX_HEIGHT)
-const boundingBoxWidth = ref(MIN_BOUNDING_BOX_WIDTH)
-const boundingBoxDepth = ref(MIN_BOUNDING_BOX_DEPTH)
+const boundingBoxHeight = ref(visualisationStore.fluidSettings.boxHeight)
+const boundingBoxWidth = ref(visualisationStore.fluidSettings.boxWidth)
+const boundingBoxDepth = ref(visualisationStore.fluidSettings.boxDepth)
 
-const particleSize = ref(DEFAULT_PARTICLE_SIZE)
-const smoothingRadius = ref(DEFAULT_SMOOTHING_RADIUS)
-const densityReference = ref(DEFAULT_DENSITY_REFERENCE)
-const pressureConstant = ref(DEFAULT_PRESSURE_CONSTANT)
-const fluidVelocity = ref(DEFAULT_FLUID_VELOCITY)
+const particleSize = ref(visualisationStore.fluidSettings.particleSize)
+const smoothingRadius = ref(visualisationStore.fluidSettings.smoothingRadius)
+const densityReference = ref(visualisationStore.fluidSettings.densityReference)
+const pressureConstant = ref(visualisationStore.fluidSettings.pressureConstant)
+const fluidVelocity = ref(visualisationStore.fluidSettings.maxVelocity)
 
 const timeout = ref(2000)
 const snackbars = ref([false, false, false, false, false])

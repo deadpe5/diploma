@@ -48,6 +48,7 @@ onMounted(() => {
         segments: segments.value
     }
 
+    visualisationStore.selectable = false
     visualisationStore.addTorusToScene(options)
     visualisationStore.zoomToFitAddMesh()
     visualisationStore.deselect()
@@ -55,6 +56,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     visualisationStore.disposeMeshToAdd()
+    visualisationStore.selectable = true
     visualisationStore.deselect()
 })
 

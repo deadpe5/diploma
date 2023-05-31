@@ -37,6 +37,7 @@ const visualisationStore = useVisualisationStore()
 
 onMounted(() => {
   visualisationStore.deselectable = true
+  visualisationStore.selectable = true
 })
 
 </script>

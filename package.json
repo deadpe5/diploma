@@ -12,6 +12,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@babel/types": "^7.22.4",
     "@babylonjs/core": "^6.1.0",
     "@babylonjs/loaders": "^6.1.0",
     "@fortawesome/fontawesome-svg-core": "^6.3.0",
