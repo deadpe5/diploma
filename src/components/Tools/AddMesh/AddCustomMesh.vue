@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue';
-import { fileTypes } from '@/constants';
+import { fileTypes } from '@/visualisation/types';
 import { useVisualisationStore } from '@/stores/visualisationStore';
 
 const visualisationStore = useVisualisationStore()

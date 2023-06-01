@@ -39,9 +39,9 @@ import {
     PARTICLE_RADIUS,
     SHAPE_COLLISION_RESTITUTION,
     VISCOSITY,
-    changableFluidParams,
 } from "@/constants";
 import { SDFHelper } from "./SDFHelper";
+import { changableFluidParams, } from "@/visualisation/types"
 import { ParticleGenerator } from "./ParticleGenerator";
 import { FluidSimulator } from "./FluidSimulator";
 import { ICylinderMetadata, ISphereMetadata } from "./types";

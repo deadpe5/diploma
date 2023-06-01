@@ -19,8 +19,8 @@ import { ENVIRONMENT_FILENAMES, ENVIRONMENT_NAMES } from '@/constants'
 
 class RenderScene {
   private readonly canvas: HTMLCanvasElement
-  private readonly _engine: Engine
-  private readonly _scene: Scene
+  private _engine: Engine
+  private _scene: Scene
   private readonly _camera: RenderCamera
   private readonly _gizmoManager: GizmoManager
   private readonly _meshManager: MeshManager
@@ -29,9 +29,9 @@ class RenderScene {
   private readonly cameraLight: PointLight
   private readonly _fluidVisualisation: FluidVisualisation
 
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement, engine: Engine) {
     this.canvas = canvas
-    this._engine = new Engine(this.canvas)
+    this._engine = engine
     this._scene = new Scene(this._engine)
     this._scene.useRightHandedSystem = true
     this.setEnvironment()
@@ -56,6 +56,11 @@ class RenderScene {
     this._fluidVisualisation = new FluidVisualisation(this)
     this._fluidVisualisation.run()
     this._scene.onDisposeObservable.add(() => {
+      this._meshManager.dispose()
+      this.sceneLight.dispose()
+      this.cameraLight.dispose()
+      this._camera.dispose()
+      this._gizmoManager.dispose()
       this._fluidVisualisation.dispose()
     })
 
@@ -139,6 +144,13 @@ class RenderScene {
     const hdrTexture = CubeTexture.CreateFromPrefilteredData(`/environments/${envFileName}`, this._scene);
     this._scene.environmentTexture = hdrTexture
     this._scene.createDefaultSkybox(this._scene.environmentTexture);
+  }
+
+  dispose() {
+    this._scene?.dispose()
+    this._scene = null as any
+    this._engine?.dispose()
+    this._engine = null as any
   }
 
   private addOnPointerObservable() {

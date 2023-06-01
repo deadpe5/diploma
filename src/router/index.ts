@@ -8,6 +8,7 @@ import AddTorusMesh from '@/components/Tools/AddMesh/AddTorusMesh.vue'
 import FluidSettingsTool from '@/components/Tools/FluidSettingsTool.vue'
 import RotateTool from '@/components/Tools/RotateTool.vue'
 import MoveTool from '@/components/Tools/MoveTool.vue'
+import SettingsTool from '@/components/Tools/SettingsTool.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
 enum RoutesName {
@@ -16,6 +17,7 @@ enum RoutesName {
   FluidSettingsTool = 'fluidSettingsTool',
   RotateTool = 'rotateTool',
   MoveTool = 'moveTool',
+  SettingsTool = 'settings',
 
   AddBoxMesh = 'addBoxMesh',
   AddCylinderMesh = 'addCylinderMesh',
@@ -30,6 +32,7 @@ enum RoutesPath {
   FluidSettingsTool = '/fluidSettings',
   RotateTool = '/rotate',
   MoveTool = '/move',
+  SettingsTool = '/settings',
 
   AddBoxMesh = '/addMesh/addBoxMesh',
   AddCylinderMesh = '/addMesh/addCylinderMesh',
@@ -90,6 +93,11 @@ const router = createRouter({
       name: RoutesName.AddCustomMesh,
       path: RoutesPath.AddCustomMesh,
       component: AddCustomMesh
+    },
+    {
+      name: RoutesName.SettingsTool,
+      path: RoutesPath.SettingsTool,
+      component: SettingsTool
     }
   ]
 })

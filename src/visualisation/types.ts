@@ -42,3 +42,17 @@ export interface ICylinderMetadata {
     height: number,
     segments: number
 }
+
+export enum fileTypes {
+    STL = '.stl',
+    OBJ = '.obj',
+    glTF = '.gltf'
+}
+
+export enum changableFluidParams {
+    particleSize = 'particleSize',
+    smoothingRadius = 'smoothingRadius',
+    densityReference = 'densityReference',
+    pressureConstant = 'pressureConstant',
+    maxVelocity = 'maxVelocity'
+} 

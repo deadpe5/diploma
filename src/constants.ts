@@ -3,12 +3,6 @@ import { Color3, Vector3 } from "@babylonjs/core"
 export const MESH_DEFAULT_ALPHA = 1.0
 export const MESH_TOGGLED_ALPHA = 0.3
 
-export enum fileTypes {
-    STL = '.stl',
-    OBJ = '.obj',
-    glTF = '.gltf'
-}
-
 // FPS Counter
 export const RED_FPS = 15
 export const YELLOW_FPS = 30
@@ -91,10 +85,7 @@ export const dir2 = new Vector3(-1, -1, 1);
 export const dir3 = new Vector3(-1, 1, -1);
 export const dir4 = new Vector3(1, 1, 1);
 
-export enum changableFluidParams {
-    particleSize = 'particleSize',
-    smoothingRadius = 'smoothingRadius',
-    densityReference = 'densityReference',
-    pressureConstant = 'pressureConstant',
-    maxVelocity = 'maxVelocity'
-} 
+// WEBGL & WEBGPU ENGINE NAMES
+export const WEBGL = 'webGL'
+export const WEBGPU = 'webGPU'
+export const ENGINE_VERSION = 'engineVersion'
