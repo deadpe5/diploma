@@ -45,6 +45,7 @@ import { changableFluidParams, } from "@/visualisation/types"
 import { ParticleGenerator } from "./ParticleGenerator";
 import { FluidSimulator } from "./FluidSimulator";
 import { ICylinderMetadata, ISphereMetadata } from "./types";
+import { useVisualisationStore } from "@/stores/visualisationStore";
 
 export class FluidVisualisation {
     // Rendering
@@ -84,6 +85,8 @@ export class FluidVisualisation {
     private isPaused: boolean
     private checkBounds: boolean
 
+    private visualisationStore = useVisualisationStore()
+
     constructor(renderScene: RenderScene) {
         this.renderScene = renderScene
         this.scene = renderScene.scene
@@ -119,7 +122,7 @@ export class FluidVisualisation {
         this.fluidRenderObject.targetRenderer.minimumThickness =
             this.fluidRenderObject.object.particleThicknessAlpha / 2;
 
-        this.fluidSimulation = new FluidSimulator()
+        this.fluidSimulation = new FluidSimulator(this.engine)
         this.fluidSimulation.smoothingRadius = particleRadius * 2
         this.fluidSimulation.maxVelocity = 3
         this.particleGenerator = new ParticleGenerator(this.scene)
@@ -287,20 +290,31 @@ export class FluidVisualisation {
 
         await this.generateParticles()
 
-        this.sceneObserver = this.scene.onBeforeRenderObservable.add(() => {
+        this.sceneObserver = this.scene.onBeforeRenderObservable.add(async () => {
             this.fluidSimulation.currentNumParticles = Math.min(this.numParticles, this.particleGenerator!.currNumParticles)
                 ; (this.fluidRenderObject.object as FluidRenderingObjectCustomParticles)
                     .setNumParticles(this.fluidSimulation.currentNumParticles)
 
             if (!this.isPaused) {
                 this.fluidSimulation.update(1 / 100)
-                this.checkCollisions(this.fluidRenderObject.object.particleSize / 2)
+                await this.checkCollisions(this.fluidRenderObject.object.particleSize / 2)
             }
 
             if (this.fluidRenderObject &&
                 this.fluidRenderObject.object.vertexBuffers['position']) {
-                this.fluidRenderObject.object.vertexBuffers['position'].updateDirectly(this.fluidSimulation.positions!, 0)
+                    this.fluidRenderObject.object.vertexBuffers['position'].updateDirectly(this.fluidSimulation.positions!, 0)
                 this.fluidRenderObject.object.vertexBuffers['velocity'].updateDirectly(this.fluidSimulation.velocities!, 0)
+
+                // if (this.visualisationStore.useWebGPU) {
+                //     const positions = await this.fluidSimulation.positionsBuffer!.read()
+                //     this.fluidRenderObject.object.vertexBuffers['position'].updateDirectly(new Float32Array(positions.buffer), 0)
+
+                //     const velocities = await this.fluidSimulation.velocitiesBuffer!.read()
+                //     this.fluidRenderObject.object.vertexBuffers['velocity'].updateDirectly(new Float32Array(velocities.buffer), 0)
+                // } else {
+                //     this.fluidRenderObject.object.vertexBuffers['position'].updateDirectly(this.fluidSimulation.positions!, 0)
+                //     this.fluidRenderObject.object.vertexBuffers['velocity'].updateDirectly(this.fluidSimulation.velocities!, 0)
+                // }
             }
         })
     }
@@ -600,14 +614,33 @@ export class FluidVisualisation {
 
             this.fluidRenderObject.object.vertexBuffers['velocity'] =
                 new VertexBuffer(this.engine, this.fluidSimulation.velocities!, 'velocity', true, false, 3, true)
+
+            // if (this.visualisationStore.useWebGPU) {
+            //     const positions = await this.fluidSimulation.positionsBuffer!.read()
+            //     this.fluidRenderObject.object.vertexBuffers['position'] =
+            //         new VertexBuffer(this.engine, new Float32Array(positions.buffer), VertexBuffer.PositionKind, true, false, 3, true)
+
+            //     const velocities = await this.fluidSimulation.velocitiesBuffer!.read()
+            //     this.fluidRenderObject.object.vertexBuffers['velocity'] =
+            //         new VertexBuffer(this.engine, new Float32Array(velocities.buffer), 'velocity', true, false, 3, true)
+            // } else {
+            //     this.fluidRenderObject.object.vertexBuffers['position'] =
+            //         new VertexBuffer(this.engine, this.fluidSimulation.positions!, VertexBuffer.PositionKind, true, false, 3, true)
+    
+            //     this.fluidRenderObject.object.vertexBuffers['velocity'] =
+            //         new VertexBuffer(this.engine, this.fluidSimulation.velocities!, 'velocity', true, false, 3, true)
+            // }
         }
     }
 
-    private checkCollisions(particleRadius: number) {
+    // WEBGPU LOW PRIORITY
+    private async checkCollisions(particleRadius: number) {
         if (this.collisionObjects.length === 0) {
             return
         }
 
+        // const positions = this.visualisationStore.useWebGPU ? new Float32Array((await this.fluidSimulation.positionsBuffer!.read()).buffer) : this.fluidSimulation.positions!
+        // const velocities = this.visualisationStore.useWebGPU ? new Float32Array((await this.fluidSimulation.velocitiesBuffer!.read()).buffer) : this.fluidSimulation.velocities!
         const positions = this.fluidSimulation.positions!
         const velocities = this.fluidSimulation.velocities!
         const tmpQuat = TmpVectors.Quaternion[0]
@@ -631,16 +664,18 @@ export class FluidVisualisation {
 
         const pos = TmpVectors.Vector3[4]
         const normal = TmpVectors.Vector3[7]
-        for (let a = 0; a < this.fluidSimulation.currentNumParticles; ++a) {
-            const px = positions[a * 3 + 0]
-            const py = positions[a * 3 + 1]
-            const pz = positions[a * 3 + 2]
-            for (let i = 0; i < this.collisionObjects.length; ++i) {
-                const shape = this.collisionObjects[i][1]
-                if (shape.disabled) {
-                    continue
-                }
+ 
+        for (let i = 0; i < this.collisionObjects.length; ++i) {
+            const shape = this.collisionObjects[i][1]
+            if (shape.disabled) {
+                continue
+            }
+            
+            for (let a = 0; a < this.fluidSimulation.currentNumParticles; ++a) {
 
+                const px = positions[a * 3 + 0]
+                const py = positions[a * 3 + 1]
+                const pz = positions[a * 3 + 2]
                 pos.copyFromFloats(px, py, pz)
                 Vector3.TransformCoordinatesToRef(pos, shape.invTransf, pos)
                 pos.scaleInPlace(1 / shape.scale)
@@ -665,5 +700,9 @@ export class FluidVisualisation {
             }
         }
 
+        // if (this.visualisationStore.useWebGPU) {
+        //     this.fluidSimulation.positionsBuffer?.update(positions)
+        //     this.fluidSimulation.velocitiesBuffer?.update(velocities)
+        // }
     }
 }
