@@ -4,16 +4,18 @@
     </v-card-title>
     <div class="d-flex flex-column mb-6">
         <v-label class="ml-4 mb-2">Dimensions</v-label>
-        <v-text-field label="Diameter Top" variant="solo" class="ml-4 mr-4" v-model="diameterTop" type="number"
+        <v-text-field label="Diameter" variant="solo" class="ml-4 mr-4" v-model="diameterTop" type="number"
+            :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']" :step="DEFAULT_SIZE_STEP"></v-text-field>
+        <!-- <v-text-field label="Diameter Top" variant="solo" class="ml-4 mr-4" v-model="diameterTop" type="number"
             :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']" :step="DEFAULT_SIZE_STEP"></v-text-field>
         <v-text-field label="Diameter Bottom" variant="solo" class="ml-4 mr-4" v-model="diameterBottom" type="number"
-            :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']" :step="DEFAULT_SIZE_STEP"></v-text-field>
+            :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']" :step="DEFAULT_SIZE_STEP"></v-text-field> -->
         <v-text-field label="Height" variant="solo" class="ml-4 mr-4" v-model="height" type="number"
             :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']" :step="DEFAULT_SIZE_STEP"></v-text-field>
         
-        <v-label class="ml-4 mb-2">Geometry</v-label>
+        <!-- <v-label class="ml-4 mb-2">Geometry</v-label>
         <v-text-field label="Segments count" variant="solo" class="ml-4 mr-4" v-model="segments" type="number"
-            :rules="[v => isValidInt(v, 2, 65) || 'Must be a integer and be 2 < value < 65']"></v-text-field>
+            :rules="[v => isValidInt(v, 2, 65) || 'Must be a integer and be 2 < value < 65']"></v-text-field> -->
 
         <div class="d-flex flex-row">
             <v-btn class="ma-2 justify-start" color="secondary" :to="{ name: 'addMeshTool' }"
@@ -45,10 +47,24 @@ const height = ref(2)
 const segments = ref(32)
 const visualisationStore = useVisualisationStore()
 
+// onMounted(() => {
+//     const options: ICylinderOptions = {
+//         diameterTop: diameterTop.value,
+//         diameterBottom: diameterBottom.value,
+//         height: height.value,
+//         segments: segments.value
+//     }
+
+//     visualisationStore.selectable = false
+//     visualisationStore.addCylinderToScene(options)
+//     visualisationStore.zoomToFitAddMesh()
+//     visualisationStore.deselect()
+// })
+
 onMounted(() => {
     const options: ICylinderOptions = {
         diameterTop: diameterTop.value,
-        diameterBottom: diameterBottom.value,
+        diameterBottom: diameterTop.value,
         height: height.value,
         segments: segments.value
     }
@@ -65,6 +81,24 @@ onBeforeUnmount(() => {
     visualisationStore.deselect()
 })
 
+// watch([diameterTop, diameterBottom, height, segments], (newValues) => {
+//     if (confirmButtonDisabled()) {
+//         return
+//     }
+//     const [diameterTop, diameterBottom, height, segments] = newValues.map(Number)
+
+//     const options: ICylinderOptions = {
+//         diameterTop: diameterTop,
+//         diameterBottom: diameterBottom,
+//         height: height,
+//         segments: segments
+//     }
+
+//     visualisationStore.addCylinderToScene(options)
+//     visualisationStore.zoomToFitAddMesh()
+//     visualisationStore.deselect()
+// })
+
 watch([diameterTop, diameterBottom, height, segments], (newValues) => {
     if (confirmButtonDisabled()) {
         return
@@ -73,7 +107,7 @@ watch([diameterTop, diameterBottom, height, segments], (newValues) => {
 
     const options: ICylinderOptions = {
         diameterTop: diameterTop,
-        diameterBottom: diameterBottom,
+        diameterBottom: diameterTop,
         height: height,
         segments: segments
     }

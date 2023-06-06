@@ -4,16 +4,18 @@
     </v-card-title>
     <div class="d-flex flex-column mb-6">
         <v-label class="ml-4 mb-2">Dimensions</v-label>
-        <v-text-field label="Diameter X" variant="solo" class="ml-4 mr-4" v-model="diameterX" type="number"
+        <v-text-field label="Diameter" variant="solo" class="ml-4 mr-4" v-model="diameterX" type="number"
             :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']" :step="DEFAULT_SIZE_STEP"></v-text-field>
-        <v-text-field label="Diameter Y" variant="solo" class="ml-4 mr-4" v-model="diameterY" type="number"
+        <!-- <v-text-field label="Diameter X" variant="solo" class="ml-4 mr-4" v-model="diameterX" type="number"
+            :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']" :step="DEFAULT_SIZE_STEP"></v-text-field> -->
+        <!-- <v-text-field label="Diameter Y" variant="solo" class="ml-4 mr-4" v-model="diameterY" type="number"
             :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']" :step="DEFAULT_SIZE_STEP"></v-text-field>
         <v-text-field label="Diameter Z" variant="solo" class="ml-4 mr-4" v-model="diameterZ" type="number"
-            :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']" :step="DEFAULT_SIZE_STEP"></v-text-field>
+            :rules="[v => isValidFloat(v, 0) || 'Must be a number and greater than 0']" :step="DEFAULT_SIZE_STEP"></v-text-field> -->
 
-        <v-label class="ml-4 mb-2">Geometry</v-label>
+        <!-- <v-label class="ml-4 mb-2">Geometry</v-label>
         <v-text-field label="Segments count" variant="solo" class="ml-4 mr-4" v-model="segments" type="number"
-            :rules="[v => isValidInt(v, 0, 65) || 'Must be a integer and be 0 < value < 65']"></v-text-field>
+            :rules="[v => isValidInt(v, 0, 65) || 'Must be a integer and be 0 < value < 65']"></v-text-field> -->
 
         <div class="d-flex flex-row">
             <v-btn class="ma-2 justify-start" color="secondary" :to="{ name: 'addMeshTool' }"
@@ -45,11 +47,25 @@ const diameterZ = ref(1)
 const segments = ref(32)
 const visualisationStore = useVisualisationStore()
 
+// onMounted(() => {
+//     const options: ISphereOptions = {
+//         diameterX: diameterX.value,
+//         diameterY: diameterY.value,
+//         diameterZ: diameterZ.value,
+//         segments: segments.value
+//     }
+
+//     visualisationStore.selectable = false
+//     visualisationStore.addSphereToScene(options)
+//     visualisationStore.zoomToFitAddMesh()
+//     visualisationStore.deselect()
+// })
+
 onMounted(() => {
     const options: ISphereOptions = {
         diameterX: diameterX.value,
-        diameterY: diameterY.value,
-        diameterZ: diameterZ.value,
+        diameterY: diameterX.value,
+        diameterZ: diameterX.value,
         segments: segments.value
     }
 
@@ -65,6 +81,24 @@ onBeforeUnmount(() => {
     visualisationStore.deselect()
 })
 
+// watch([diameterX, diameterY, diameterZ, segments], (newValues) => {
+//     if (confirmButtonDisabled()) {
+//         return
+//     }
+//     const [diameterX, diameterY, diameterZ, segments] = newValues.map(Number)
+
+//     const options: ISphereOptions = {
+//         diameterX: diameterX,
+//         diameterY: diameterY,
+//         diameterZ: diameterZ,
+//         segments: segments
+//     }
+
+//     visualisationStore.addSphereToScene(options)
+//     visualisationStore.zoomToFitAddMesh()
+//     visualisationStore.deselect()
+// })
+
 watch([diameterX, diameterY, diameterZ, segments], (newValues) => {
     if (confirmButtonDisabled()) {
         return
@@ -73,8 +107,8 @@ watch([diameterX, diameterY, diameterZ, segments], (newValues) => {
 
     const options: ISphereOptions = {
         diameterX: diameterX,
-        diameterY: diameterY,
-        diameterZ: diameterZ,
+        diameterY: diameterX,
+        diameterZ: diameterX,
         segments: segments
     }
 
