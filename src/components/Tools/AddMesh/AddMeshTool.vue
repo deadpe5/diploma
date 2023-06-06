@@ -18,15 +18,15 @@
             Add Cylinder
         </v-btn>
 
-        <v-btn class="ma-2 justify-start" color="primary" :to="{ name: 'addTorusMesh' }">
+        <!-- <v-btn class="ma-2 justify-start" color="primary" :to="{ name: 'addTorusMesh' }">
             <v-icon class="v-btn__prepend" icon="mdi-circle-double" />
             Add Torus
-        </v-btn>
+        </v-btn> -->
 
-        <v-btn class="ma-2 justify-start" color="primary" :to="{ name: 'addCustomMesh' }">
+        <!-- <v-btn class="ma-2 justify-start" color="primary" :to="{ name: 'addCustomMesh' }">
             <v-icon class="v-btn__prepend" icon="mdi-triforce" />
             Add Custom Mesh
-        </v-btn>
+        </v-btn> -->
 
         <v-btn class="ma-2 justify-start" color="secondary" :to="{ name: 'root' }">
             <v-icon class="v-btn__prepend" icon="mdi-arrow-left" />
