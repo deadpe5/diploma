@@ -1,4 +1,4 @@
-import { ComputeShader, Engine, StorageBuffer, UniformBuffer, Vector3 } from "@babylonjs/core"
+import { ComputeShader, Constants, Engine, Matrix, Nullable, Quaternion, StorageBuffer, TmpVectors, UniformBuffer, Vector3 } from "@babylonjs/core"
 import { Hash } from "./Hash"
 import { IParticleData } from "./types"
 import {
@@ -8,13 +8,13 @@ import {
     VISCOSITY,
     MAX_ACCELERATION,
     MAX_VELOCITY,
-    MIN_TIME_STEP
+    MIN_TIME_STEP,
+    SHAPE_COLLISION_RESTITUTION
 } from "@/constants"
 import { useVisualisationStore } from "@/stores/visualisationStore"
 
 export class FluidSimulator {
     private engine: Engine
-    private _particlesArray: number[]
     private _particles: IParticleData[]
     private _numMaxParticles: number
     private _positions: Float32Array | undefined
@@ -26,11 +26,19 @@ export class FluidSimulator {
     private _viscConstant: number
     private _smoothingRadius: number = 0.2
     private visualisationStore = useVisualisationStore()
+    private shapeCollisionRestitution: number
 
-    private computeParams: UniformBuffer;
-    private updateParams: UniformBuffer;
-    private _positionsStorageBuffer: StorageBuffer | undefined;
-    private _velocitiesStorageBuffer: StorageBuffer | undefined;
+    private computeParams: Nullable<UniformBuffer> = null;
+    private updateParams: Nullable<UniformBuffer> = null;
+    private collisionParams: Nullable<UniformBuffer> = null;
+    private _particlesArray: number[]
+    private _particlesStorageBuffer: Nullable<StorageBuffer> = null;
+    private _positionsStorageBuffer: Nullable<StorageBuffer> = null;
+    private _velocitiesStorageBuffer: Nullable<StorageBuffer> = null;
+    private _computeDensityAndPressureCS: Nullable<ComputeShader> = null;
+    private _computeAccelerationCS: Nullable<ComputeShader> = null;
+    private _updatePositionsCS: Nullable<ComputeShader> = null;
+    private _checkCollisionsCS: Nullable<ComputeShader> = null;
 
     get smoothingRadius() {
         return this._smoothingRadius
@@ -57,12 +65,16 @@ export class FluidSimulator {
     }
 
     set mass(m: number) {
-        for (const particle of this._particles) {
-            particle.mass = m
-        }
+        if (this.visualisationStore.useWebGPU) {
+            for (let i = 0; i < this._particlesArray.length; i += 6) {
+                this._particlesArray[i] = m
+            }
 
-        for (let i = 0; i < this._particlesArray.length; i += 6) {
-            this._particlesArray[i] = m
+            this._particlesStorageBuffer?.update(this._particlesArray)
+        } else {
+            for (const particle of this._particles) {
+                particle.mass = m
+            }
         }
     }
 
@@ -77,8 +89,8 @@ export class FluidSimulator {
         this._hash = new Hash(this._smoothingRadius, this._numMaxParticles)
     }
 
-    private updateParamBuffers() {
-        if (!this.visualisationStore.useWebGPU) {
+    private updateParamBuffers(deltaTime?: number) {
+        if (!this.visualisationStore.useWebGPU || !this.computeParams || !this.updateParams) {
             return
         }
 
@@ -96,6 +108,7 @@ export class FluidSimulator {
 
         this.computeParams.update()
 
+        this.updateParams.updateFloat('deltaTime', deltaTime ? deltaTime : 1 / 100)
         this.updateParams.updateFloat('maxVelocity', this.maxVelocity)
         this.updateParams.updateUInt('currentNumParticles', this.currentNumParticles)
         this.updateParams.update()
@@ -125,31 +138,116 @@ export class FluidSimulator {
         this._positions = positions ?? new Float32Array()
         this._velocities = velocities ?? new Float32Array()
 
+        this._numMaxParticles = this._positions.length / 3
+
         if (this.visualisationStore.useWebGPU) {
             this._positionsStorageBuffer?.dispose()
-            this._positionsStorageBuffer = new StorageBuffer(this.engine, this._positions!.byteLength)
+            this._positionsStorageBuffer = new StorageBuffer(this.engine, this._positions!.byteLength, Constants.BUFFER_CREATIONFLAG_VERTEX | Constants.BUFFER_CREATIONFLAG_WRITE)
             this._positionsStorageBuffer.update(this._positions!)
             this._velocitiesStorageBuffer?.dispose()
-            this._velocitiesStorageBuffer = new StorageBuffer(this.engine, this._velocities!.byteLength)
+            this._velocitiesStorageBuffer = new StorageBuffer(this.engine, this._velocities!.byteLength, Constants.BUFFER_CREATIONFLAG_VERTEX | Constants.BUFFER_CREATIONFLAG_WRITE)
             this._velocitiesStorageBuffer.update(this._velocities!)
-        }
 
-        this._numMaxParticles = this._positions.length / 3
-        this._hash = new Hash(this._smoothingRadius, this._numMaxParticles)
-        for (let i = this._particles.length; i < this._numMaxParticles; ++i) {
-            this._particles.push({
-                mass: this.mass,
-                density: 0,
-                pressure: 0,
-                accelX: 0,
-                accelY: 0,
-                accelZ: 0
-            })
-        }
+            for (let i = this._particlesArray.length / 6; i < this._numMaxParticles; ++i) {
+                for (let j = 0; j < 6; ++j) {
+                    this._particlesArray.push(j === 0 ? this.mass : 0)
+                }
+            }
 
-        for (let i = this._particlesArray.length / 6; i < this._numMaxParticles; ++i) {
-            for (let j = 0; j < 6; ++j) {
-                this._particlesArray.push(j === 0 ? this.mass : 0)
+            this._particlesStorageBuffer?.dispose()
+            this._particlesStorageBuffer = new StorageBuffer(this.engine, 4 * this._particlesArray.length)
+            this._particlesStorageBuffer.update(this._particlesArray)
+
+            this._computeDensityAndPressureCS = new ComputeShader(
+                'computeDensityAndPressure',
+                this.engine,
+                { computeSource: this.computeDensityAndPressureShader },
+                {
+                    bindingsMapping: {
+                        "params": { group: 0, binding: 0 },
+                        "positions": { group: 0, binding: 1 },
+                        "particles": { group: 0, binding: 2 },
+                    }
+                }
+            )
+
+            this._computeDensityAndPressureCS.setUniformBuffer('params', this.computeParams!)
+            this._computeDensityAndPressureCS.setStorageBuffer('positions', this._positionsStorageBuffer!)
+            this._computeDensityAndPressureCS.setStorageBuffer('particles', this._particlesStorageBuffer!)
+
+            this._computeAccelerationCS = new ComputeShader(
+                'computeAcceleration',
+                this.engine,
+                { computeSource: this.computeAccelerationShader },
+                {
+                    bindingsMapping: {
+                        "params": { group: 0, binding: 0 },
+                        "positions": { group: 0, binding: 1 },
+                        "velocities": { group: 0, binding: 2 },
+                        "particles": { group: 0, binding: 3 },
+                    }
+                }
+            )
+
+            this._computeAccelerationCS.setUniformBuffer('params', this.computeParams!)
+            this._computeAccelerationCS.setStorageBuffer('positions', this._positionsStorageBuffer!)
+            this._computeAccelerationCS.setStorageBuffer('velocities', this._velocitiesStorageBuffer!)
+            this._computeAccelerationCS.setStorageBuffer('particles', this._particlesStorageBuffer!)
+
+            this._updatePositionsCS = new ComputeShader(
+                'updatePositions',
+                this.engine,
+                { computeSource: this.updatePositionsShader },
+                {
+                    bindingsMapping: {
+                        "params": { group: 0, binding: 0 },
+                        "positions": { group: 0, binding: 1 },
+                        "velocities": { group: 0, binding: 2 },
+                        "particles": { group: 0, binding: 3 },
+                    }
+                }
+            )
+
+            this._updatePositionsCS.setUniformBuffer('params', this.updateParams!)
+            this._updatePositionsCS.setStorageBuffer('positions', this._positionsStorageBuffer!)
+            this._updatePositionsCS.setStorageBuffer('velocities', this._velocitiesStorageBuffer!)
+            this._updatePositionsCS.setStorageBuffer('particles', this._particlesStorageBuffer!)
+            
+            this.collisionParams!.addUniform('currentNumParticles', 1);
+            this.collisionParams!.addUniform('restitution', 1);
+            this.collisionParams!.addUniform('particleRadius', 1);
+            this.collisionParams!.addMatrix('transf', Matrix.Identity());
+            this.collisionParams!.addMatrix('invTransf', Matrix.Identity());
+            
+            this._checkCollisionsCS = new ComputeShader(
+                'checkCollisions',
+                this.engine,
+                { computeSource: this.checkCollisionShader },
+                {
+                    bindingsMapping: {
+                        "params": { group: 0, binding: 0 },
+                        "positions": { group: 0, binding: 1 },
+                        "velocities": { group: 0, binding: 2 },
+                        "particles": { group: 0, binding: 3 },
+                    }
+                }
+            )
+
+
+            this._checkCollisionsCS.setStorageBuffer('positions', this._positionsStorageBuffer!)
+            this._checkCollisionsCS.setStorageBuffer('velocities', this._velocitiesStorageBuffer!)
+            this._checkCollisionsCS.setStorageBuffer('particles', this._particlesStorageBuffer!)
+        } else {
+            this._hash = new Hash(this._smoothingRadius, this._numMaxParticles)
+            for (let i = this._particles.length; i < this._numMaxParticles; ++i) {
+                this._particles.push({
+                    mass: this.mass,
+                    density: 0,
+                    pressure: 0,
+                    accelX: 0,
+                    accelY: 0,
+                    accelZ: 0
+                })
             }
         }
     }
@@ -162,6 +260,7 @@ export class FluidSimulator {
         this._particlesArray = []
         this._numMaxParticles = 0
         this._mass = mass
+        this.shapeCollisionRestitution = SHAPE_COLLISION_RESTITUTION
 
         if (positions && velocities) {
             this.setParticleData(positions, velocities)
@@ -174,6 +273,10 @@ export class FluidSimulator {
         this._spikyConstant = 0
         this._viscConstant = 0
         this.computeConstants()
+
+        if (!this.visualisationStore.useWebGPU) {
+            return
+        }
 
         this.computeParams = new UniformBuffer(this.engine)
 
@@ -194,20 +297,24 @@ export class FluidSimulator {
         this.updateParams.addUniform('maxVelocity', 1)
         this.updateParams.addUniform('currentNumParticles', 1)
 
-        this.updateParamBuffers()
+        this.collisionParams = new UniformBuffer(this.engine)
+
+        this.updateParamBuffers(1 / 100)
     }
 
-    public async update(deltaTime: number) {
+    public update(deltaTime: number, particleRadius: number, collisionObjects: any[]) {
         if (this.visualisationStore.useWebGPU) {
-            this.updateParamBuffers()
-            this.computeDensityAndPressureGPU()
-            this.computeAccelerationGPU()
-            this.updatePositions(deltaTime)
+            this.updateParamBuffers(deltaTime)
+            this._computeDensityAndPressureCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 256))
+            this._computeAccelerationCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 256))
+            this._updatePositionsCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 256))
+            // this.checkCollisions(particleRadius, collisionObjects)
         } else {
             this._hash.create(this._positions!, this.currentNumParticles)
             this.computeDensityAndPressure()
             this.computeAcceleration()
             this.updatePositions(deltaTime)
+            // this.checkCollisions(particleRadius, collisionObjects)
         }
     }
 
@@ -240,40 +347,7 @@ export class FluidSimulator {
         }
     }
 
-    public computeDensityAndPressureGPU() {
-        const particleStorageBuffer = new StorageBuffer(this.engine, 4 * this._particlesArray.length)
-        particleStorageBuffer.update(this._particlesArray)
-
-        const cs = new ComputeShader(
-            'computeDensityAndPressure',
-            this.engine,
-            { computeSource: this.computeDensityAndPressureShader },
-            {
-                bindingsMapping: {
-                    "params": {group: 0, binding: 0},
-                    "positions": { group: 0, binding: 1 },
-                    "particles": { group: 0, binding: 2 },
-                }
-            }
-        )
-        
-        cs.setUniformBuffer('params', this.computeParams)
-        cs.setStorageBuffer('positions', this._positionsStorageBuffer!)
-        cs.setStorageBuffer('particles', particleStorageBuffer)
-        
-        cs.dispatchWhenReady(Math.ceil(this.currentNumParticles / 256)).then(() => {
-            particleStorageBuffer.read().then((res) => {
-                const array = new Float32Array(res.buffer)
-                this._particlesArray = Array.from(array)
-                for (let i = 0; i < array.length / 6; ++i) {
-                    this._particles[i].density = array[i * 6 + 1]
-                    this._particles[i].pressure = array[i * 6 + 2]
-                }
-            })
-        });
-    }
-
-    private computeAcceleration() { 
+    private computeAcceleration() {
         // Pressure-based acceleration + viscosity-based acceleration computation
         for (let a = 0; a < this.currentNumParticles; ++a) {
             const pA = this._particles[a]
@@ -356,85 +430,6 @@ export class FluidSimulator {
         }
     }
 
-    private computeAccelerationGPU() { 
-        const particleStorageBuffer = new StorageBuffer(this.engine, 4 * this._particlesArray.length)
-        particleStorageBuffer.update(this._particlesArray)
-
-        const cs = new ComputeShader(
-            'computeAcceleration',
-            this.engine,
-            { computeSource: this.computeAccelerationShader },
-            {
-                bindingsMapping: {
-                    "params": {group: 0, binding: 0},
-                    "positions": { group: 0, binding: 1 },
-                    "velocities": { group: 0, binding: 2 },
-                    "particles": { group: 0, binding: 3 },
-                }
-            }
-        )
-        
-        cs.setUniformBuffer('params', this.computeParams)
-        cs.setStorageBuffer('positions', this._positionsStorageBuffer!)
-        cs.setStorageBuffer('velocities', this._velocitiesStorageBuffer!)
-        cs.setStorageBuffer('particles', particleStorageBuffer)
-        
-        cs.dispatchWhenReady(Math.ceil(this.currentNumParticles / 256)).then(() => {
-            particleStorageBuffer.read().then((res) => {
-                const array = new Float32Array(res.buffer)
-                this._particlesArray = Array.from(array)
-                for (let i = 0; i < array.length / 6; ++i) {
-                    this._particles[i].accelX = array[i * 6 + 3]
-                    this._particles[i].accelY = array[i * 6 + 4]
-                    this._particles[i].accelZ = array[i * 6 + 5]
-                }
-            })
-        });
-    }
-
-    // WEBGPU LOW PRIORITY
-    private calculateTimeStep(): number {
-        let maxVelocity = 0
-        let maxAcceleration = 0
-        let maxSpeedOfSound = 0
-
-        for (let a = 0; a < this.currentNumParticles; ++a) {
-            const pA = this._particles[a]
-            const velSq =
-                this._velocities![a * 3 + 0] * this._velocities![a * 3 + 0] +
-                this._velocities![a * 3 + 1] * this._velocities![a * 3 + 1] +
-                this._velocities![a * 3 + 2] * this._velocities![a * 3 + 2]
-
-            const accSq =
-                pA.accelX * pA.accelX +
-                pA.accelY * pA.accelY +
-                pA.accelZ * pA.accelZ
-
-            const spsSq = pA.density < 0.00001 ? 0 : pA.pressure / pA.density
-            if (velSq > maxVelocity) {
-                maxVelocity = velSq
-            }
-
-            if (accSq > maxAcceleration) {
-                maxAcceleration = accSq
-            }
-
-            if (spsSq > maxSpeedOfSound) {
-                maxSpeedOfSound = spsSq
-            }
-        }
-
-        maxVelocity = Math.sqrt(maxVelocity)
-        maxAcceleration = Math.sqrt(maxAcceleration)
-        maxSpeedOfSound = Math.sqrt(maxSpeedOfSound)
-
-        const velStep = (0.4 * this.smoothingRadius) / Math.max(1, maxVelocity)
-        const accStep = 0.4 * Math.sqrt(this.smoothingRadius / maxAcceleration)
-        const spsStep = this.smoothingRadius / maxSpeedOfSound
-
-        return Math.max(this.minTimeStep, Math.min(velStep, accStep, spsStep))
-    }
-
     private updatePositions(deltaTime: number) {
         for (let a = 0; a < this.currentNumParticles; ++a) {
             const pA = this._particles[a]
@@ -460,33 +455,68 @@ export class FluidSimulator {
         }
     }
 
-    private updatePositionsGPU(deltaTime: number) {
-        const particleStorageBuffer = new StorageBuffer(this.engine, 4 * this._particlesArray.length)
-        particleStorageBuffer.update(this._particlesArray)
+    private checkCollisions(particleRadius: number, collisionObjects: any[]) {
+        if (collisionObjects.length === 0) {
+            return
+        }
 
-        const cs = new ComputeShader(
-            'updatePositions',
-            this.engine,
-            { computeSource: this.updatePositionsShader },
-            {
-                bindingsMapping: {
-                    "params": {group: 0, binding: 0},
-                    "positions": { group: 0, binding: 1 },
-                    "velocities": { group: 0, binding: 2 },
-                    "particles": { group: 0, binding: 3 },
+        const positions = this.positions!
+        const velocities = this.velocities!
+        const tmpQuat = TmpVectors.Quaternion[0]
+        const tmpScale = TmpVectors.Vector3[0]
+        tmpScale.copyFromFloats(1, 1, 1)
+
+        for (let i = 0; i < collisionObjects.length; ++i) {
+            const shape = collisionObjects[i][1]
+            const quat = shape.mesh?.rotationQuaternion ??
+                shape.rotationQuaternion ??
+                Quaternion.FromEulerAnglesToRef(
+                    shape.mesh?.rotation.x ?? shape.rotation.x,
+                    shape.mesh?.rotation.y ?? shape.rotation.y,
+                    shape.mesh?.rotation.z ?? shape.rotation.z,
+                    tmpQuat
+                )
+
+            Matrix.ComposeToRef(tmpScale, quat, shape.mesh?.position ?? shape.position, shape.transf)
+            shape.transf.invertToRef(shape.invTransf)
+        }
+
+        const pos = TmpVectors.Vector3[4]
+        const normal = TmpVectors.Vector3[7]
+
+        for (let i = 0; i < collisionObjects.length; ++i) {
+            const shape = collisionObjects[i][1]
+            if (shape.disabled) {
+                continue
+            }
+
+            for (let a = 0; a < this.currentNumParticles; ++a) {
+                const px = positions[a * 3 + 0]
+                const py = positions[a * 3 + 1]
+                const pz = positions[a * 3 + 2]
+                pos.copyFromFloats(px, py, pz)
+                Vector3.TransformCoordinatesToRef(pos, shape.invTransf, pos)
+                pos.scaleInPlace(1 / shape.scale)
+                const dist = shape.scale * shape.sdEvaluate(pos, ...shape.params) - particleRadius
+
+                if (dist < 0) {
+                    shape.computeNormal(pos, shape, normal)
+                    const restitution = shape.collisionRestitution ?? this.shapeCollisionRestitution
+                    const dotvn =
+                        velocities[a * 3 + 0] * normal.x +
+                        velocities[a * 3 + 1] * normal.y +
+                        velocities[a * 3 + 2] * normal.z
+
+                    velocities[a * 3 + 0] = (velocities[a * 3 + 0] - 2 * dotvn * normal.x) * restitution
+                    velocities[a * 3 + 1] = (velocities[a * 3 + 1] - 2 * dotvn * normal.y) * restitution
+                    velocities[a * 3 + 2] = (velocities[a * 3 + 2] - 2 * dotvn * normal.z) * restitution
+
+                    positions[a * 3 + 0] -= normal.x * dist
+                    positions[a * 3 + 1] -= normal.y * dist
+                    positions[a * 3 + 2] -= normal.z * dist
                 }
             }
-        )
-
-        this.updateParams.updateFloat('deltaTime', deltaTime)
-        this.updateParams.update()
-
-        cs.setUniformBuffer('params', this.updateParams)
-        cs.setStorageBuffer('positions', this._positionsStorageBuffer!)
-        cs.setStorageBuffer('velocities', this._velocitiesStorageBuffer!)
-        cs.setStorageBuffer('particles', particleStorageBuffer)
-
-        cs.dispatchWhenReady(Math.ceil(this.currentNumParticles / 256))
+        }
     }
 
     private computeDensityAndPressureShader: string =
@@ -532,7 +562,7 @@ export class FluidSimulator {
 
             particles[index].density = 0;
 
-            for (var b = 0u; b < arrayLength(&particles); b = b + 1u) {
+            for (var b = 0u; b < params.currentNumParticles; b = b + 1u) {
                 if (b == index) {
                     continue;
                 }
@@ -552,7 +582,6 @@ export class FluidSimulator {
             particles[index].pressure = params.pressureConstant * (particles[index].density - params.densityReference);
         }
     `
-    
     private computeAccelerationShader: string =
     `
         struct Partile {
@@ -607,7 +636,7 @@ export class FluidSimulator {
             var viscosityAccelY = f32(0);
             var viscosityAccelZ = f32(0);
 
-            for (var b = 0u; b < arrayLength(&particles); b = b + 1u) {
+            for (var b = 0u; b < params.currentNumParticles; b = b + 1u) {
                 if (b == index) {
                     continue;
                 }
@@ -625,9 +654,9 @@ export class FluidSimulator {
                     diffZ /= r;
 
                     // TODO costil
-                    if (particles[index].pressure == 0 || particles[index].density == 0 || particles[b].pressure == 0 || particles[b].density == 0) {
-                        continue;
-                    }
+                    //if (particles[index].density == 0 || particles[b].density == 0) {
+                    //    continue;
+                    //}
 
                     let w = params.spikyConstant * (params.smoothingRadius - r) * (params.smoothingRadius - r);
                     let massRatio = particles[b].mass / particles[index].mass;
@@ -667,7 +696,6 @@ export class FluidSimulator {
             }
         }
     `
-    
     private updatePositionsShader: string =
     `
     struct Partile {
@@ -717,6 +745,85 @@ export class FluidSimulator {
         positions[index * 3 + 0] += params.deltaTime * velocities[index * 3 + 0];
         positions[index * 3 + 1] += params.deltaTime * velocities[index * 3 + 1];
         positions[index * 3 + 2] += params.deltaTime * velocities[index * 3 + 2];
+    }
+    `
+    private checkCollisionShader: string =
+    `
+    struct Partile {
+        mass: f32,
+        density: f32,
+        pressure: f32,
+        accelX: f32,
+        accelY: f32,
+        accelZ: f32,
+    };
+
+    struct Params {
+        currentNumParticles: u32,
+        restitution: f32,
+        particleRadius: f32,
+        transf: mat4x4<f32>,
+        invTransf: mat4x4<f32>,
+        shapeParams: array<f32>,
+    };
+
+    @group(0) @binding(0) var<uniform> params : Params;
+    @group(0) @binding(1) var<storage, read_write> positions : array<f32>;
+    @group(0) @binding(2) var<storage, read_write> velocities : array<f32>;
+    @group(0) @binding(3) var<storage, read> particles : array<Partile>;
+
+    fn computeNormal(pos: vec4<f32>) -> vec4<f32> {
+        let normal = vec4<f32>(0, 0, 0, 0);
+        var dir1 = vec4<f32>(1, -1, -1, 0);
+        var dir2 = vec4<f32>(-1, -1, 1, 0);
+        var dir3 = vec4<f32>(1, -1, -1, 0);
+        var dir4 = vec4<f32>(1, -1, -1, 0);
+
+        normal += dir1 * SDPlane(pos);   
+        normal += dir2 * SDPlane(pos);   
+        normal += dir3 * SDPlane(pos);   
+        normal += dir4 * SDPlane(pos);   
+        
+        return normalize(normal)
+    }
+
+    fn SDPlane(pos: vec4<f32>) -> f32 {
+        var n = vec4<f32>(params.shapeParams[0], params.shapeParams[1], params.shapeParams[2], 0);
+        var h = params.shapeParams[3];
+        return dot(pos, n) + h
+    }
+
+    @compute @workgroup_size(256, 1, 1)
+    fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
+        let index = global_id.x;
+
+        if (index >= params.currentNumParticles) {
+            return;
+        }
+
+        var px = positions[index * 3 + 0];
+        var py = positions[index * 3 + 1];
+        var pz = positions[index * 3 + 2];
+
+        var pos = vec4<f32>(px, py, pz, 1) * params.invTransf;
+        var dist = SDPlane(pos) - params.particleRadius;
+
+        if (dist < 0) {
+            var normal = computeNormal(pos);
+
+            var dotvn = 
+                velocities[index * 3 + 0] * normal.x +
+                velocities[index * 3 + 1] * normal.y +
+                velocities[index * 3 + 2] * normal.z
+
+            velocities[index * 3 + 0] = (velocities[index * 3 + 0] - 2 * dotvn * normal.x) * params.restitution
+            velocities[index * 3 + 1] = (velocities[index * 3 + 1] - 2 * dotvn * normal.y) * params.restitution
+            velocities[index * 3 + 2] = (velocities[index * 3 + 2] - 2 * dotvn * normal.z) * params.restitution
+
+            positions[index * 3 + 0] -= normal.x * dist
+            positions[index * 3 + 1] -= normal.y * dist
+            positions[index * 3 + 2] -= normal.z * dist
+        }
     }
     `
 }

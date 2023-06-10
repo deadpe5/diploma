@@ -52,9 +52,9 @@ export class ParticleGenerator {
                     (pz1 - pz2) * (pz1 - pz2)
                 )
 
-                if (dist > this.particleRadius * 2) {
+                // if (dist > this.particleRadius * 2) {
                     this._currNumParticles += this.numCrossSection
-                }
+                // }
             }
         })
     }
