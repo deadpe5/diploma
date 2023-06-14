@@ -142,10 +142,10 @@ export class FluidSimulator {
 
         if (this.visualisationStore.useWebGPU) {
             this._positionsStorageBuffer?.dispose()
-            this._positionsStorageBuffer = new StorageBuffer(this.engine, this._positions!.byteLength, Constants.BUFFER_CREATIONFLAG_VERTEX | Constants.BUFFER_CREATIONFLAG_WRITE)
+            this._positionsStorageBuffer = new StorageBuffer(this.engine, this._positions!.byteLength, Constants.BUFFER_CREATIONFLAG_VERTEX | Constants.BUFFER_CREATIONFLAG_READWRITE)
             this._positionsStorageBuffer.update(this._positions!)
             this._velocitiesStorageBuffer?.dispose()
-            this._velocitiesStorageBuffer = new StorageBuffer(this.engine, this._velocities!.byteLength, Constants.BUFFER_CREATIONFLAG_VERTEX | Constants.BUFFER_CREATIONFLAG_WRITE)
+            this._velocitiesStorageBuffer = new StorageBuffer(this.engine, this._velocities!.byteLength, Constants.BUFFER_CREATIONFLAG_VERTEX | Constants.BUFFER_CREATIONFLAG_READWRITE)
             this._velocitiesStorageBuffer.update(this._velocities!)
 
             for (let i = this._particlesArray.length / 6; i < this._numMaxParticles; ++i) {
@@ -155,7 +155,7 @@ export class FluidSimulator {
             }
 
             this._particlesStorageBuffer?.dispose()
-            this._particlesStorageBuffer = new StorageBuffer(this.engine, 4 * this._particlesArray.length)
+            this._particlesStorageBuffer = new StorageBuffer(this.engine, 4 * this._particlesArray.length, Constants.BUFFER_CREATIONFLAG_VERTEX | Constants.BUFFER_CREATIONFLAG_READWRITE)
             this._particlesStorageBuffer.update(this._particlesArray)
 
             this._computeDensityAndPressureCS = new ComputeShader(
@@ -228,15 +228,13 @@ export class FluidSimulator {
                         "params": { group: 0, binding: 0 },
                         "positions": { group: 0, binding: 1 },
                         "velocities": { group: 0, binding: 2 },
-                        "particles": { group: 0, binding: 3 },
                     }
                 }
             )
 
-
+            this._checkCollisionsCS.setUniformBuffer('params', this.updateParams!)
             this._checkCollisionsCS.setStorageBuffer('positions', this._positionsStorageBuffer!)
             this._checkCollisionsCS.setStorageBuffer('velocities', this._velocitiesStorageBuffer!)
-            this._checkCollisionsCS.setStorageBuffer('particles', this._particlesStorageBuffer!)
         } else {
             this._hash = new Hash(this._smoothingRadius, this._numMaxParticles)
             for (let i = this._particles.length; i < this._numMaxParticles; ++i) {
@@ -305,16 +303,16 @@ export class FluidSimulator {
     public update(deltaTime: number, particleRadius: number, collisionObjects: any[]) {
         if (this.visualisationStore.useWebGPU) {
             this.updateParamBuffers(deltaTime)
-            this._computeDensityAndPressureCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 256))
-            this._computeAccelerationCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 256))
-            this._updatePositionsCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 256))
-            // this.checkCollisions(particleRadius, collisionObjects)
+            this._computeDensityAndPressureCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 64))
+            this._computeAccelerationCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 64))
+            this._updatePositionsCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 64))
+            this._checkCollisionsCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 64))
         } else {
             this._hash.create(this._positions!, this.currentNumParticles)
             this.computeDensityAndPressure()
             this.computeAcceleration()
             this.updatePositions(deltaTime)
-            // this.checkCollisions(particleRadius, collisionObjects)
+            this.checkCollisions(particleRadius, collisionObjects)
         }
     }
 
@@ -485,10 +483,11 @@ export class FluidSimulator {
         const normal = TmpVectors.Vector3[7]
 
         for (let i = 0; i < collisionObjects.length; ++i) {
-            const shape = collisionObjects[i][1]
-            if (shape.disabled) {
-                continue
-            }
+            const shape = collisionObjects[6][1]
+            // const shape = collisionObjects[i][1]
+            // if (shape.disabled) {
+            //     continue
+            // }
 
             for (let a = 0; a < this.currentNumParticles; ++a) {
                 const px = positions[a * 3 + 0]
@@ -516,6 +515,8 @@ export class FluidSimulator {
                     positions[a * 3 + 2] -= normal.z * dist
                 }
             }
+
+            break;
         }
     }
 
@@ -548,7 +549,7 @@ export class FluidSimulator {
         @group(0) @binding(1) var<storage, read> positions : array<f32>;
         @group(0) @binding(2) var<storage, read_write> particles : array<Partile>;
 
-        @compute @workgroup_size(256, 1, 1)
+        @compute @workgroup_size(64, 1, 1)
         fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
             let index = global_id.x;
 
@@ -563,10 +564,6 @@ export class FluidSimulator {
             particles[index].density = 0;
 
             for (var b = 0u; b < params.currentNumParticles; b = b + 1u) {
-                if (b == index) {
-                    continue;
-                }
-
                 let diffX = paX - positions[b * 3 + 0]; 
                 let diffY = paY - positions[b * 3 + 1]; 
                 let diffZ = paZ - positions[b * 3 + 2];
@@ -612,7 +609,7 @@ export class FluidSimulator {
         @group(0) @binding(2) var<storage, read> velocities : array<f32>;
         @group(0) @binding(3) var<storage, read_write> particles : array<Partile>;
 
-        @compute @workgroup_size(256, 1, 1)
+        @compute @workgroup_size(64, 1, 1)
         fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
             let index = global_id.x;
 
@@ -624,9 +621,9 @@ export class FluidSimulator {
             let paY = positions[index * 3 + 1];
             let paZ = positions[index * 3 + 2];
 
-            let vaX = positions[index * 3 + 0];
-            let vaY = positions[index * 3 + 1];
-            let vaZ = positions[index * 3 + 2];
+            let vaX = velocities[index * 3 + 0];
+            let vaY = velocities[index * 3 + 1];
+            let vaZ = velocities[index * 3 + 2];
 
             var pressureAccelX = f32(0);
             var pressureAccelY = f32(0);
@@ -637,10 +634,6 @@ export class FluidSimulator {
             var viscosityAccelZ = f32(0);
 
             for (var b = 0u; b < params.currentNumParticles; b = b + 1u) {
-                if (b == index) {
-                    continue;
-                }
-
                 var diffX = paX - positions[b * 3 + 0];
                 var diffY = paY - positions[b * 3 + 1];
                 var diffZ = paZ - positions[b * 3 + 2];
@@ -652,11 +645,6 @@ export class FluidSimulator {
                     diffX /= r;
                     diffY /= r;
                     diffZ /= r;
-
-                    // TODO costil
-                    //if (particles[index].density == 0 || particles[b].density == 0) {
-                    //    continue;
-                    //}
 
                     let w = params.spikyConstant * (params.smoothingRadius - r) * (params.smoothingRadius - r);
                     let massRatio = particles[b].mass / particles[index].mass;
@@ -718,7 +706,7 @@ export class FluidSimulator {
     @group(0) @binding(2) var<storage, read_write> velocities : array<f32>;
     @group(0) @binding(3) var<storage, read> particles : array<Partile>;
 
-    @compute @workgroup_size(256, 1, 1)
+    @compute @workgroup_size(64, 1, 1)
     fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
         let index = global_id.x;
 
@@ -759,41 +747,91 @@ export class FluidSimulator {
     };
 
     struct Params {
+        deltaTime: f32,
+        maxVelocity: f32,
         currentNumParticles: u32,
-        restitution: f32,
-        particleRadius: f32,
-        transf: mat4x4<f32>,
-        invTransf: mat4x4<f32>,
-        shapeParams: array<f32>,
     };
+
+    // struct Params {
+    //     currentNumParticles: u32,
+    //     restitution: f32,
+    //     particleRadius: f32,
+    //     transf: mat4x4<f32>,
+    //     invTransf: mat4x4<f32>,
+    //     shapeParams: array<f32>,
+    // };
 
     @group(0) @binding(0) var<uniform> params : Params;
     @group(0) @binding(1) var<storage, read_write> positions : array<f32>;
     @group(0) @binding(2) var<storage, read_write> velocities : array<f32>;
-    @group(0) @binding(3) var<storage, read> particles : array<Partile>;
+
+    const eps = 0.0001;
+    const eps1 = vec4<f32>(eps, -eps, -eps, 1);
+    const eps2 = vec4<f32>(-eps, -eps, eps, 1);
+    const eps3 = vec4<f32>(-eps, eps, -eps, 1);
+    const eps4 = vec4<f32>(eps, eps, eps, 1);
+
+    const dir1 = vec4<f32>(1, -1, -1, 0);
+    const dir2 = vec4<f32>(-1, -1, 1, 0);
+    const dir3 = vec4<f32>(-1, 1, -1, 0);
+    const dir4 = vec4<f32>(1, 1, 1, 0);
 
     fn computeNormal(pos: vec4<f32>) -> vec4<f32> {
-        let normal = vec4<f32>(0, 0, 0, 0);
-        var dir1 = vec4<f32>(1, -1, -1, 0);
-        var dir2 = vec4<f32>(-1, -1, 1, 0);
-        var dir3 = vec4<f32>(1, -1, -1, 0);
-        var dir4 = vec4<f32>(1, -1, -1, 0);
+        var normal = vec4<f32>(0, 0, 0, 0);
 
-        normal += dir1 * SDPlane(pos);   
-        normal += dir2 * SDPlane(pos);   
-        normal += dir3 * SDPlane(pos);   
-        normal += dir4 * SDPlane(pos);   
+        normal += SDPlane(pos + eps1) * dir1;   
+        normal += SDPlane(pos + eps2) * dir2;   
+        normal += SDPlane(pos + eps3) * dir3;   
+        normal += SDPlane(pos + eps4) * dir4;
         
-        return normalize(normal)
+        // normal += SDVerticalCylinder(pos + eps1) * dir1;   
+        // normal += SDVerticalCylinder(pos + eps2) * dir2;   
+        // normal += SDVerticalCylinder(pos + eps3) * dir3;   
+        // normal += SDVerticalCylinder(pos + eps4) * dir4;
+        
+        return normalize(normal);
     }
 
     fn SDPlane(pos: vec4<f32>) -> f32 {
-        var n = vec4<f32>(params.shapeParams[0], params.shapeParams[1], params.shapeParams[2], 0);
-        var h = params.shapeParams[3];
-        return dot(pos, n) + h
+        // let n = vec4<f32>(params.shapeParams[0], params.shapeParams[1], params.shapeParams[2], 0);
+        // let h = params.shapeParams[3];
+        let n = vec4<f32>(0, 1, 0, 0);
+        let h = 0.5;
+        return dot(pos, n) + h;
     }
 
-    @compute @workgroup_size(256, 1, 1)
+    fn SDSphere(pos: vec4<f32>) -> f32 {
+        // let s = radius
+        let s = 1.;
+        return length(pos) - s; 
+    }
+
+    fn SDBox(pos: vec4<f32>) -> f32 {
+        // extend
+        let b = vec3<f32>(0.25, 0.25, 0.25);
+        var q = vec3<f32>(abs(pos.x), abs(pos.y), abs(pos.z));
+        q -= b;
+
+        let tmp = min(max(q.x, max(q.y, q.z)), 0);
+        q.x = max(q.x, 0);
+        q.y = max(q.y, 0);
+        q.z = max(q.z, 0);
+
+        return length(q) + tmp;
+    }
+
+    fn SDVerticalCylinder(pos: vec4<f32>) -> f32 {
+        // radius and height
+        let r = 0.25;
+        let h = 0.75;
+        let dx = abs(sqrt(pos.x * pos.x + pos.z * pos.z)) - r;
+        let dy = abs(pos.y) - h / 2.;
+        let dx2 = max(dx, 0);
+        let dy2 = max(dy, 0);
+        return (min(max(dx, dy),0) + sqrt(dx2 * dx2 + dy2 * dy2));
+    }
+
+    @compute @workgroup_size(64, 1, 1)
     fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
         let index = global_id.x;
 
@@ -801,28 +839,32 @@ export class FluidSimulator {
             return;
         }
 
-        var px = positions[index * 3 + 0];
-        var py = positions[index * 3 + 1];
-        var pz = positions[index * 3 + 2];
+        let restitution = 0.98;
+        let particleRadius = 0.04;
+        let px = positions[index * 3 + 0];
+        let py = positions[index * 3 + 1];
+        let pz = positions[index * 3 + 2];
 
-        var pos = vec4<f32>(px, py, pz, 1) * params.invTransf;
-        var dist = SDPlane(pos) - params.particleRadius;
+        // let pos = vec4<f32>(px, py, pz, 1) * params.invTransf;
+        let pos = vec4<f32>(px, py, pz, 1);
+        let dist = SDPlane(pos) - particleRadius;
+        // let dist = SDVerticalCylinder(pos) - particleRadius;
 
         if (dist < 0) {
-            var normal = computeNormal(pos);
-
-            var dotvn = 
+            // let normal = vec3<f32>(0, 1, 0);
+            let normal = computeNormal(pos);
+            let dotvn = 
                 velocities[index * 3 + 0] * normal.x +
                 velocities[index * 3 + 1] * normal.y +
-                velocities[index * 3 + 2] * normal.z
+                velocities[index * 3 + 2] * normal.z;
 
-            velocities[index * 3 + 0] = (velocities[index * 3 + 0] - 2 * dotvn * normal.x) * params.restitution
-            velocities[index * 3 + 1] = (velocities[index * 3 + 1] - 2 * dotvn * normal.y) * params.restitution
-            velocities[index * 3 + 2] = (velocities[index * 3 + 2] - 2 * dotvn * normal.z) * params.restitution
+            velocities[index * 3 + 0] = (velocities[index * 3 + 0] - 2 * dotvn * normal.x) * restitution;
+            velocities[index * 3 + 1] = (velocities[index * 3 + 1] - 2 * dotvn * normal.y) * restitution;
+            velocities[index * 3 + 2] = (velocities[index * 3 + 2] - 2 * dotvn * normal.z) * restitution;
 
-            positions[index * 3 + 0] -= normal.x * dist
-            positions[index * 3 + 1] -= normal.y * dist
-            positions[index * 3 + 2] -= normal.z * dist
+            positions[index * 3 + 0] -= normal.x * dist;
+            positions[index * 3 + 1] -= normal.y * dist;
+            positions[index * 3 + 2] -= normal.z * dist;
         }
     }
     `

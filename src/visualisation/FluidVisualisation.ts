@@ -286,7 +286,7 @@ export class FluidVisualisation {
 
         await this.generateParticles()
 
-        this.sceneObserver = this.scene.onBeforeRenderObservable.add(async () => {
+        this.sceneObserver = this.scene.onBeforeRenderObservable.add(() => {
             this.fluidSimulation.currentNumParticles = Math.min(this.numParticles, this.particleGenerator!.currNumParticles)
                 ; (this.fluidRenderObject.object as FluidRenderingObjectCustomParticles)
                     .setNumParticles(this.fluidSimulation.currentNumParticles)
