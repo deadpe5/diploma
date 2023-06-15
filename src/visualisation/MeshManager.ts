@@ -13,7 +13,7 @@ import {
     Color3,
     DracoCompression
 } from '@babylonjs/core'
-import { fileTypes } from '../constants'
+import { fileTypes } from '@/visualisation/types'
 import '@babylonjs/loaders/STL'
 import '@babylonjs/loaders/OBJ'
 import '@babylonjs/loaders/glTF'
@@ -216,5 +216,9 @@ export default class MeshManager {
         if (this.visualisationStore.meshToAdd) {
             this.visualisationStore.meshToAdd.dispose()
         }
+    }
+    
+    public dispose() {
+        this.defaultMaterial.dispose()
     }
 }

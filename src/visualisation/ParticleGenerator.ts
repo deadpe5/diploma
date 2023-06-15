@@ -1,6 +1,8 @@
+import { useVisualisationStore } from "@/stores/visualisationStore";
 import { Nullable, Observer, Scene, Vector3 } from "@babylonjs/core";
 
 export class ParticleGenerator {
+    private visualisationStore = useVisualisationStore()
     private scene: Scene
     private observer: Nullable<Observer<Scene>>
     private _currNumParticles: number
@@ -38,22 +40,26 @@ export class ParticleGenerator {
                 }
             }
             else if (this._currNumParticles < this.numParticles) {
-                const px1 = this._positions[this._currNumParticles * 3 + 0]
-                const py1 = this._positions[this._currNumParticles * 3 + 1]
-                const pz1 = this._positions[this._currNumParticles * 3 + 2]
-
-                const px2 = this._positions[(this._currNumParticles - this.numCrossSection) * 3 + 0]
-                const py2 = this._positions[(this._currNumParticles - this.numCrossSection) * 3 + 1]
-                const pz2 = this._positions[(this._currNumParticles - this.numCrossSection) * 3 + 2]
-
-                const dist = Math.sqrt(
-                    (px1 - px2) * (px1 - px2) +
-                    (py1 - py2) * (py1 - py2) +
-                    (pz1 - pz2) * (pz1 - pz2)
-                )
-
-                if (dist > this.particleRadius * 2) {
+                if (this.visualisationStore.useWebGPU) {
                     this._currNumParticles += this.numCrossSection
+                } else {
+                    const px1 = this._positions[this._currNumParticles * 3 + 0]
+                    const py1 = this._positions[this._currNumParticles * 3 + 1]
+                    const pz1 = this._positions[this._currNumParticles * 3 + 2]
+    
+                    const px2 = this._positions[(this._currNumParticles - this.numCrossSection) * 3 + 0]
+                    const py2 = this._positions[(this._currNumParticles - this.numCrossSection) * 3 + 1]
+                    const pz2 = this._positions[(this._currNumParticles - this.numCrossSection) * 3 + 2]
+    
+                    const dist = Math.sqrt(
+                        (px1 - px2) * (px1 - px2) +
+                        (py1 - py2) * (py1 - py2) +
+                        (pz1 - pz2) * (pz1 - pz2)
+                    )
+    
+                    if (dist > this.particleRadius * 2) {
+                        this._currNumParticles += this.numCrossSection
+                    }
                 }
             }
         })

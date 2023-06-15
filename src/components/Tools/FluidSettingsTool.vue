@@ -124,7 +124,6 @@ import {
     MAX_FLUID_VELOCITY,
     FLUID_VELOCITY_STEP,
     DEFAULT_PARTICLE_SIZE,
-    changableFluidParams,
     DEFAULT_SMOOTHING_RADIUS,
     DEFAULT_DENSITY_REFERENCE,
     DEFAULT_PRESSURE_CONSTANT,
@@ -135,6 +134,8 @@ import {
 } from '../../constants'
 import { useVisualisationStore } from '@/stores/visualisationStore';
 import { Vector3 } from '@babylonjs/core';
+import { changableFluidParams } from '@/visualisation/types'
+
 const visualisationStore = useVisualisationStore()
 
 const boundingBoxHeight = ref(visualisationStore.fluidSettings.boxHeight)

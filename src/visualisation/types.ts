@@ -25,12 +25,12 @@ export interface ITorusOptions {
 }
 
 export interface IParticleData {
-    mass: number,
-    density: number,
-    pressure: number,
-    accelX: number,
-    accelY: number,
-    accelZ: number
+    mass: number, // 0
+    density: number, // 1
+    pressure: number, // 2
+    accelX: number, // 3
+    accelY: number, // 4
+    accelZ: number // 5
 }
 
 export interface ISphereMetadata {
@@ -42,3 +42,17 @@ export interface ICylinderMetadata {
     height: number,
     segments: number
 }
+
+export enum fileTypes {
+    STL = '.stl',
+    OBJ = '.obj',
+    glTF = '.gltf'
+}
+
+export enum changableFluidParams {
+    particleSize = 'particleSize',
+    smoothingRadius = 'smoothingRadius',
+    densityReference = 'densityReference',
+    pressureConstant = 'pressureConstant',
+    maxVelocity = 'maxVelocity'
+} 

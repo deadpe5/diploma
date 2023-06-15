@@ -15,7 +15,6 @@ import {
     FluidRenderer,
     IFluidRenderingRenderObject,
     VertexBuffer,
-    TmpVectors,
     Color4,
     FluidRenderingObjectCustomParticles,
     AbstractMesh,
@@ -37,14 +36,14 @@ import {
     MIN_BOUNDING_BOX_HEIGHT,
     MIN_BOUNDING_BOX_WIDTH,
     PARTICLE_RADIUS,
-    SHAPE_COLLISION_RESTITUTION,
     VISCOSITY,
-    changableFluidParams,
 } from "@/constants";
 import { SDFHelper } from "./SDFHelper";
+import { changableFluidParams, } from "@/visualisation/types"
 import { ParticleGenerator } from "./ParticleGenerator";
 import { FluidSimulator } from "./FluidSimulator";
 import { ICylinderMetadata, ISphereMetadata } from "./types";
+import { useVisualisationStore } from "@/stores/visualisationStore";
 
 export class FluidVisualisation {
     // Rendering
@@ -56,7 +55,6 @@ export class FluidVisualisation {
     private sceneObserver: Nullable<Observer<Scene>>
     private fluidRenderer: Nullable<FluidRenderer>
     private numParticles: number
-    private shapeCollisionRestitution: number
     private particleGenerator: Nullable<ParticleGenerator>
     private fluidRenderObject: IFluidRenderingRenderObject
     private fluidSimulation: FluidSimulator
@@ -66,8 +64,8 @@ export class FluidVisualisation {
     private collisionObjects: any[]
 
     // Bounding Box
-    private boxMin: Vector3
-    private boxMax: Vector3
+    private _boxMin: Vector3
+    private _boxMax: Vector3
     private boxMesh: Mesh
     private boxMeshFront: Mesh
     private boxMaterial: PBRMaterial
@@ -84,6 +82,8 @@ export class FluidVisualisation {
     private isPaused: boolean
     private checkBounds: boolean
 
+    private visualisationStore = useVisualisationStore()
+
     constructor(renderScene: RenderScene) {
         this.renderScene = renderScene
         this.scene = renderScene.scene
@@ -94,7 +94,6 @@ export class FluidVisualisation {
         this.sceneRenderObserver = null as any
         this.sceneKeyboardObserver = null as any
         this.sceneObserver = null as any
-        this.shapeCollisionRestitution = SHAPE_COLLISION_RESTITUTION
         this.particleGenerator = null
         const particleRadius = PARTICLE_RADIUS
         const camera = this.scene.activeCameras?.[0] ?? this.scene.activeCamera
@@ -119,23 +118,23 @@ export class FluidVisualisation {
         this.fluidRenderObject.targetRenderer.minimumThickness =
             this.fluidRenderObject.object.particleThicknessAlpha / 2;
 
-        this.fluidSimulation = new FluidSimulator()
+        this.fluidSimulation = new FluidSimulator(this.engine)
         this.fluidSimulation.smoothingRadius = particleRadius * 2
         this.fluidSimulation.maxVelocity = 3
         this.particleGenerator = new ParticleGenerator(this.scene)
         this.particleGenerator.particleRadius = particleRadius
 
-        this.boxMax = new Vector3(
+        this._boxMax = new Vector3(
             MIN_BOUNDING_BOX_HEIGHT / 2,
             MIN_BOUNDING_BOX_WIDTH / 2,
             MIN_BOUNDING_BOX_DEPTH / 2,
         )
-        this.boxMin = new Vector3(
+        this._boxMin = new Vector3(
             -MIN_BOUNDING_BOX_HEIGHT / 2,
             -MIN_BOUNDING_BOX_WIDTH / 2,
             -MIN_BOUNDING_BOX_DEPTH / 2,
         )
-        this.particleGenerator.position = Vector3.Center(this.boxMax, this.boxMin)
+        this.particleGenerator.position = Vector3.Center(this._boxMax, this._boxMin)
 
         this.isPaused = false
         this.checkBounds = true
@@ -148,13 +147,13 @@ export class FluidVisualisation {
         this.boxMaterial = null as any
         this.boxMaterialFront = null as any
         this.origCollisionPlanes = [
-            new Plane(0, 0, -1, Math.abs(this.boxMax.z)),
-            new Plane(0, 0, 1, Math.abs(this.boxMin.z)),
-            new Plane(1, 0, 0, Math.abs(this.boxMin.x)),
-            new Plane(-1, 0, 0, Math.abs(this.boxMax.x)),
-            new Plane(0, -1, 0, Math.abs(this.boxMax.y)),
-            new Plane(0, 1, 0, Math.abs(this.boxMin.y)),
-            new Plane(0, 1, 0, Math.abs(this.boxMin.y)),
+            new Plane(0, 0, -1, Math.abs(this._boxMax.z)),
+            new Plane(0, 0, 1, Math.abs(this._boxMin.z)),
+            new Plane(1, 0, 0, Math.abs(this._boxMin.x)),
+            new Plane(-1, 0, 0, Math.abs(this._boxMax.x)),
+            new Plane(0, -1, 0, Math.abs(this._boxMax.y)),
+            new Plane(0, 1, 0, Math.abs(this._boxMin.y)),
+            new Plane(0, 1, 0, Math.abs(this._boxMin.y)),
         ]
         this.collisionPlanes = []
         for (let i = 0; i < this.origCollisionPlanes.length; ++i) {
@@ -170,6 +169,14 @@ export class FluidVisualisation {
 
     set boxOpacity(value: number) {
         this.boxMaterial.alpha = value
+    }
+
+    get boxMin(): Vector3 {
+        return this._boxMin
+    }
+
+    get boxMax(): Vector3 {
+        return this._boxMax
     }
 
     async run() {
@@ -192,14 +199,14 @@ export class FluidVisualisation {
         this.boxMaterialFront.cullBackFaces = true
 
         this.boxMesh = MeshBuilder.CreateBox('boxMesh', {
-            width: this.boxMax.x - this.boxMin.x,
-            height: this.boxMax.y - this.boxMin.y,
-            depth: this.boxMax.z - this.boxMin.z,
+            width: this._boxMax.x - this._boxMin.x,
+            height: this._boxMax.y - this._boxMin.y,
+            depth: this._boxMax.z - this._boxMin.z,
         })
         this.boxMesh.material = this.boxMaterial
-        this.boxMesh.position.x = (this.boxMax.x + this.boxMin.x) / 2
-        this.boxMesh.position.y = (this.boxMax.y + this.boxMin.y) / 2
-        this.boxMesh.position.z = (this.boxMax.z + this.boxMin.z) / 2
+        this.boxMesh.position.x = (this._boxMax.x + this._boxMin.x) / 2
+        this.boxMesh.position.y = (this._boxMax.y + this._boxMin.y) / 2
+        this.boxMesh.position.z = (this._boxMax.z + this._boxMin.z) / 2
         this.boxMesh.isPickable = false
 
         this.boxMeshFront = this.boxMesh.clone('boxMeshFront')
@@ -293,12 +300,16 @@ export class FluidVisualisation {
                     .setNumParticles(this.fluidSimulation.currentNumParticles)
 
             if (!this.isPaused) {
-                this.fluidSimulation.update(1 / 100)
-                this.checkCollisions(this.fluidRenderObject.object.particleSize / 2)
+                this.fluidSimulation.update(
+                    1 / 100, 
+                    this.fluidRenderObject.object.particleSize / 2, 
+                    this.collisionObjects
+                )
             }
 
             if (this.fluidRenderObject &&
-                this.fluidRenderObject.object.vertexBuffers['position']) {
+                this.fluidRenderObject.object.vertexBuffers['position'] &&
+                !this.visualisationStore.useWebGPU) {
                 this.fluidRenderObject.object.vertexBuffers['position'].updateDirectly(this.fluidSimulation.positions!, 0)
                 this.fluidRenderObject.object.vertexBuffers['velocity'].updateDirectly(this.fluidSimulation.velocities!, 0)
             }
@@ -390,14 +401,14 @@ export class FluidVisualisation {
     public rotateMeshes(angleX: number, angleY: number) {
         const transform = Matrix.RotationYawPitchRoll(0, angleX * Math.PI / 180, angleY * Math.PI / 180)
         const boxVertices = [
-            new Vector3(this.boxMin.x, this.boxMin.y, this.boxMin.z),
-            new Vector3(this.boxMin.x, this.boxMax.y, this.boxMin.z),
-            new Vector3(this.boxMin.x, this.boxMax.y, this.boxMax.z),
-            new Vector3(this.boxMin.x, this.boxMin.y, this.boxMax.z),
-            new Vector3(this.boxMax.x, this.boxMin.y, this.boxMin.z),
-            new Vector3(this.boxMax.x, this.boxMax.y, this.boxMin.z),
-            new Vector3(this.boxMax.x, this.boxMax.y, this.boxMax.z),
-            new Vector3(this.boxMax.x, this.boxMin.y, this.boxMax.z),
+            new Vector3(this._boxMin.x, this._boxMin.y, this._boxMin.z),
+            new Vector3(this._boxMin.x, this._boxMax.y, this._boxMin.z),
+            new Vector3(this._boxMin.x, this._boxMax.y, this._boxMax.z),
+            new Vector3(this._boxMin.x, this._boxMin.y, this._boxMax.z),
+            new Vector3(this._boxMax.x, this._boxMin.y, this._boxMin.z),
+            new Vector3(this._boxMax.x, this._boxMax.y, this._boxMin.z),
+            new Vector3(this._boxMax.x, this._boxMax.y, this._boxMax.z),
+            new Vector3(this._boxMax.x, this._boxMin.y, this._boxMax.z),
         ]
 
         let yMin = Number.MAX_VALUE
@@ -418,9 +429,9 @@ export class FluidVisualisation {
         if (this.boxMesh && this.boxMeshFront) {
             this.boxMesh.rotationQuaternion = quat
             this.boxMeshFront.rotationQuaternion = quat
-            this.boxMesh.position.x = (this.boxMin.x + this.boxMax.x) / 2
-            this.boxMesh.position.y = (this.boxMin.y + this.boxMax.y) / 2
-            this.boxMesh.position.z = (this.boxMin.z + this.boxMax.z) / 2
+            this.boxMesh.position.x = (this._boxMin.x + this._boxMax.x) / 2
+            this.boxMesh.position.y = (this._boxMin.y + this._boxMax.y) / 2
+            this.boxMesh.position.z = (this._boxMin.z + this._boxMax.z) / 2
             this.boxMesh.position = Vector3.TransformCoordinates(this.boxMesh.position, transform)
             this.boxMeshFront.position = this.boxMesh.position
         }
@@ -463,38 +474,38 @@ export class FluidVisualisation {
     }
 
     public changeBoxDimension(min: Vector3, max: Vector3) {
-        this.boxMin = min
-        this.boxMax = max
+        this._boxMin = min
+        this._boxMax = max
 
-        this.origCollisionPlanes[0].d = Math.abs(this.boxMax.z)
-        this.origCollisionPlanes[1].d = Math.abs(this.boxMin.z)
-        this.origCollisionPlanes[2].d = Math.abs(this.boxMin.x)
-        this.origCollisionPlanes[3].d = Math.abs(this.boxMax.x)
-        this.origCollisionPlanes[4].d = Math.abs(this.boxMax.y)
-        this.origCollisionPlanes[5].d = Math.abs(this.boxMin.y)
-        this.origCollisionPlanes[6].d = Math.abs(this.boxMin.y)
+        this.origCollisionPlanes[0].d = Math.abs(this._boxMax.z)
+        this.origCollisionPlanes[1].d = Math.abs(this._boxMin.z)
+        this.origCollisionPlanes[2].d = Math.abs(this._boxMin.x)
+        this.origCollisionPlanes[3].d = Math.abs(this._boxMax.x)
+        this.origCollisionPlanes[4].d = Math.abs(this._boxMax.y)
+        this.origCollisionPlanes[5].d = Math.abs(this._boxMin.y)
+        this.origCollisionPlanes[6].d = Math.abs(this._boxMin.y)
         
-        this.collisionPlanes[0][1].params[1] = Math.abs(this.boxMax.z)
-        this.collisionPlanes[1][1].params[1] = Math.abs(this.boxMin.z)
-        this.collisionPlanes[2][1].params[1] = Math.abs(this.boxMin.x)
-        this.collisionPlanes[3][1].params[1] = Math.abs(this.boxMax.x)
-        this.collisionPlanes[4][1].params[1] = Math.abs(this.boxMax.y)
-        this.collisionPlanes[5][1].params[1] = Math.abs(this.boxMin.y)
-        this.collisionPlanes[6][1].params[1] = Math.abs(this.boxMin.y)
+        this.collisionPlanes[0][1].params[1] = Math.abs(this._boxMax.z)
+        this.collisionPlanes[1][1].params[1] = Math.abs(this._boxMin.z)
+        this.collisionPlanes[2][1].params[1] = Math.abs(this._boxMin.x)
+        this.collisionPlanes[3][1].params[1] = Math.abs(this._boxMax.x)
+        this.collisionPlanes[4][1].params[1] = Math.abs(this._boxMax.y)
+        this.collisionPlanes[5][1].params[1] = Math.abs(this._boxMin.y)
+        this.collisionPlanes[6][1].params[1] = Math.abs(this._boxMin.y)
 
         const quat = this.boxMesh?.rotationQuaternion
         this.boxMesh?.dispose()
         this.boxMeshFront?.dispose()
 
         this.boxMesh = MeshBuilder.CreateBox('boxMesh', {
-            width: this.boxMax.x - this.boxMin.x,
-            height: this.boxMax.y - this.boxMin.y,
-            depth: this.boxMax.z - this.boxMin.z,
+            width: this._boxMax.x - this._boxMin.x,
+            height: this._boxMax.y - this._boxMin.y,
+            depth: this._boxMax.z - this._boxMin.z,
         })
         this.boxMesh.material = this.boxMaterial
-        this.boxMesh.position.x = (this.boxMax.x + this.boxMin.x) / 2
-        this.boxMesh.position.y = (this.boxMax.y + this.boxMin.y) / 2
-        this.boxMesh.position.z = (this.boxMax.z + this.boxMin.z) / 2
+        this.boxMesh.position.x = (this._boxMax.x + this._boxMin.x) / 2
+        this.boxMesh.position.y = (this._boxMax.y + this._boxMin.y) / 2
+        this.boxMesh.position.z = (this._boxMax.z + this._boxMin.z) / 2
         this.boxMesh.isPickable = false
 
         this.boxMeshFront = this.boxMesh.clone('boxMeshFront')
@@ -595,75 +606,19 @@ export class FluidVisualisation {
             this.fluidRenderObject.object.vertexBuffers['position']?.dispose()
             this.fluidRenderObject.object.vertexBuffers['velocity']?.dispose()
 
-            this.fluidRenderObject.object.vertexBuffers['position'] =
-                new VertexBuffer(this.engine, this.fluidSimulation.positions!, VertexBuffer.PositionKind, true, false, 3, true)
-
-            this.fluidRenderObject.object.vertexBuffers['velocity'] =
-                new VertexBuffer(this.engine, this.fluidSimulation.velocities!, 'velocity', true, false, 3, true)
-        }
-    }
-
-    private checkCollisions(particleRadius: number) {
-        if (this.collisionObjects.length === 0) {
-            return
-        }
-
-        const positions = this.fluidSimulation.positions!
-        const velocities = this.fluidSimulation.velocities!
-        const tmpQuat = TmpVectors.Quaternion[0]
-        const tmpScale = TmpVectors.Vector3[0]
-        tmpScale.copyFromFloats(1, 1, 1)
-
-        for (let i = 0; i < this.collisionObjects.length; ++i) {
-            const shape = this.collisionObjects[i][1]
-            const quat = shape.mesh?.rotationQuaternion ??
-                shape.rotationQuaternion ??
-                Quaternion.FromEulerAnglesToRef(
-                    shape.mesh?.rotation.x ?? shape.rotation.x,
-                    shape.mesh?.rotation.y ?? shape.rotation.y,
-                    shape.mesh?.rotation.z ?? shape.rotation.z,
-                    tmpQuat
-                )
-
-            Matrix.ComposeToRef(tmpScale, quat, shape.mesh?.position ?? shape.position, shape.transf)
-            shape.transf.invertToRef(shape.invTransf)
-        }
-
-        const pos = TmpVectors.Vector3[4]
-        const normal = TmpVectors.Vector3[7]
-        for (let a = 0; a < this.fluidSimulation.currentNumParticles; ++a) {
-            const px = positions[a * 3 + 0]
-            const py = positions[a * 3 + 1]
-            const pz = positions[a * 3 + 2]
-            for (let i = 0; i < this.collisionObjects.length; ++i) {
-                const shape = this.collisionObjects[i][1]
-                if (shape.disabled) {
-                    continue
-                }
-
-                pos.copyFromFloats(px, py, pz)
-                Vector3.TransformCoordinatesToRef(pos, shape.invTransf, pos)
-                pos.scaleInPlace(1 / shape.scale)
-                const dist = shape.scale * shape.sdEvaluate(pos, ...shape.params) - particleRadius
-
-                if (dist < 0) {
-                    shape.computeNormal(pos, shape, normal)
-                    const restitution = shape.collisionRestitution ?? this.shapeCollisionRestitution
-                    const dotvn =
-                        velocities[a * 3 + 0] * normal.x +
-                        velocities[a * 3 + 1] * normal.y +
-                        velocities[a * 3 + 2] * normal.z
-
-                    velocities[a * 3 + 0] = (velocities[a * 3 + 0] - 2 * dotvn * normal.x) * restitution
-                    velocities[a * 3 + 1] = (velocities[a * 3 + 1] - 2 * dotvn * normal.y) * restitution
-                    velocities[a * 3 + 2] = (velocities[a * 3 + 2] - 2 * dotvn * normal.z) * restitution
-
-                    positions[a * 3 + 0] -= normal.x * dist
-                    positions[a * 3 + 1] -= normal.y * dist
-                    positions[a * 3 + 2] -= normal.z * dist
-                }
+            if (this.visualisationStore.useWebGPU) {
+                this.fluidRenderObject.object.vertexBuffers['position'] =
+                    new VertexBuffer(this.engine, this.fluidSimulation.positionsBuffer!.getBuffer(), VertexBuffer.PositionKind, true, false, 3, true)
+    
+                this.fluidRenderObject.object.vertexBuffers['velocity'] =
+                    new VertexBuffer(this.engine, this.fluidSimulation.velocitiesBuffer!.getBuffer(), 'velocity', true, false, 3, true)
+            } else {
+                this.fluidRenderObject.object.vertexBuffers['position'] =
+                    new VertexBuffer(this.engine, this.fluidSimulation.positions!, VertexBuffer.PositionKind, true, false, 3, true)
+    
+                this.fluidRenderObject.object.vertexBuffers['velocity'] =
+                    new VertexBuffer(this.engine, this.fluidSimulation.velocities!, 'velocity', true, false, 3, true)
             }
         }
-
     }
 }

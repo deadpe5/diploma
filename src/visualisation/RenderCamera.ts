@@ -50,19 +50,8 @@ class RenderCamera extends ArcRotateCamera{
   }
 
   public zoomToFit() {
-    let maxVec = new Vector3(-Infinity, -Infinity, -Infinity);
-    let minVec = new Vector3(Infinity, Infinity, Infinity);
-
-    if (this.visualisationStore.sceneItems.length !== 0) {
-      for (const mesh of this.visualisationStore.sceneItems) {
-        const meshBoundingBox = mesh.getBoundingInfo().boundingBox
-        minVec = Vector3.Minimize(meshBoundingBox.minimumWorld, minVec)
-        maxVec = Vector3.Maximize(meshBoundingBox.maximumWorld, maxVec)
-      }
-    } else {
-      minVec = Vector3.One().scale(-1)
-      maxVec = Vector3.One()
-    }
+    const maxVec = this.visualisationStore.getBoundingBoxMax
+    const minVec = this.visualisationStore.getBoundingBoxMin
 
     const sceneBoundingInfo = new BoundingInfo(minVec, maxVec)
     const sceneBoundingSphere = sceneBoundingInfo.boundingSphere
@@ -72,7 +61,7 @@ class RenderCamera extends ArcRotateCamera{
     if (aspectRatio < 1) {
       halfMinFov = Math.atan(aspectRatio * Math.tan(halfMinFov))
     }
-    const viewRadius = Math.abs(sceneBoundingSphere.radiusWorld / Math.sin(halfMinFov))
+    const viewRadius = 1.618 * Math.abs(sceneBoundingSphere.radiusWorld / Math.sin(halfMinFov))
     const currentAlpha = this.alpha
     const currentBeta = this.beta
     

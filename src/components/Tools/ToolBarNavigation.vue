@@ -26,6 +26,11 @@
             <v-icon class="v-btn__prepend" icon="mdi-transition" />
             Move
         </v-btn>
+
+        <v-btn class="ma-2 justify-start" color="primary" :to="{ name: 'settings' }">
+            <v-icon class="v-btn__prepend" icon="mdi-cog" />
+            Settings
+        </v-btn>
     </div>
 </template>
 

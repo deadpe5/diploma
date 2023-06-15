@@ -11,18 +11,22 @@ import {
   MIN_BOUNDING_BOX_WIDTH,
   RED_FPS,
   YELLOW_FPS,
-  changableFluidParams,
-  fileTypes
+  ENGINE_VERSION,
+  WEBGPU,
+  WEBGL
 } from '@/constants'
 import RenderScene from '@/visualisation/RenderScene'
-import type { IBoxOptions, ICylinderOptions, ISphereOptions, ITorusOptions } from '@/visualisation/types'
-import { Color4, Vector3 } from '@babylonjs/core'
+import type { IBoxOptions, ICylinderOptions, ISphereOptions, ITorusOptions, fileTypes } from '@/visualisation/types'
+import { changableFluidParams } from '@/visualisation/types'
+import { Color4, Engine, Vector3, WebGPUEngine } from '@babylonjs/core'
 import type { AbstractMesh } from '@babylonjs/core/Meshes'
 import { defineStore } from 'pinia'
 
 export const useVisualisationStore = defineStore('visulisationStore', {
   state: () => {
     return {
+      useWebGPU: false,
+      isWebGPUSupported: false,
       renderScene: null as RenderScene | null,
       selectedMesh: null as AbstractMesh | null,
       meshToAdd: null as AbstractMesh | null,
@@ -47,9 +51,50 @@ export const useVisualisationStore = defineStore('visulisationStore', {
     }
   },
 
+  getters: {
+    getBoundingBoxMin(): Vector3 {
+      if (this.renderScene) {
+        return this.renderScene.fluidVisualisation.boxMin
+      }
+
+      return Vector3.One().scale(-1)
+    },
+
+    getBoundingBoxMax(): Vector3 {
+      if (this.renderScene) {
+        return this.renderScene.fluidVisualisation.boxMax
+      }
+
+      return Vector3.One()
+    },
+  },
+
   actions: {
-    init(canvas: HTMLCanvasElement) {
-      this.renderScene = new RenderScene(canvas)
+    async init(canvas: HTMLCanvasElement) {
+      const engineVersion = window.localStorage.getItem(ENGINE_VERSION)
+      this.isWebGPUSupported = await WebGPUEngine.IsSupportedAsync
+      if (engineVersion === WEBGPU && this.isWebGPUSupported) {
+        this.useWebGPU = true
+        window.localStorage.setItem(ENGINE_VERSION, WEBGPU)
+        const webGPUEngine = new WebGPUEngine(canvas, {
+          enableAllFeatures: true,
+          setMaximumLimits: true,
+          antialias: true
+        })
+        await webGPUEngine.initAsync()
+        this.renderScene = new RenderScene(canvas, webGPUEngine)
+      } else {
+        this.useWebGPU = false
+        window.localStorage.setItem(ENGINE_VERSION, WEBGL)
+        const engine = new Engine(canvas, true)
+        this.renderScene = new RenderScene(canvas, engine)
+      }
+    },
+
+    dispose() {
+      if (this.renderScene) {
+        this.renderScene.dispose()
+      }
     },
 
     rotateCamera(alpha: number, beta: number) {
@@ -117,8 +162,8 @@ export const useVisualisationStore = defineStore('visulisationStore', {
     resetMeshToAdd() {
       if (this.meshToAdd) {
         this.meshToAdd.position = Vector3.Zero()
-        this.zoomToFit()
         this.sceneItems.push(this.meshToAdd)
+        this.zoomToFit()
         this.meshToAdd = null
       }
     },
