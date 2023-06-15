@@ -64,8 +64,8 @@ export class FluidVisualisation {
     private collisionObjects: any[]
 
     // Bounding Box
-    private boxMin: Vector3
-    private boxMax: Vector3
+    private _boxMin: Vector3
+    private _boxMax: Vector3
     private boxMesh: Mesh
     private boxMeshFront: Mesh
     private boxMaterial: PBRMaterial
@@ -124,17 +124,17 @@ export class FluidVisualisation {
         this.particleGenerator = new ParticleGenerator(this.scene)
         this.particleGenerator.particleRadius = particleRadius
 
-        this.boxMax = new Vector3(
+        this._boxMax = new Vector3(
             MIN_BOUNDING_BOX_HEIGHT / 2,
             MIN_BOUNDING_BOX_WIDTH / 2,
             MIN_BOUNDING_BOX_DEPTH / 2,
         )
-        this.boxMin = new Vector3(
+        this._boxMin = new Vector3(
             -MIN_BOUNDING_BOX_HEIGHT / 2,
             -MIN_BOUNDING_BOX_WIDTH / 2,
             -MIN_BOUNDING_BOX_DEPTH / 2,
         )
-        this.particleGenerator.position = Vector3.Center(this.boxMax, this.boxMin)
+        this.particleGenerator.position = Vector3.Center(this._boxMax, this._boxMin)
 
         this.isPaused = false
         this.checkBounds = true
@@ -147,13 +147,13 @@ export class FluidVisualisation {
         this.boxMaterial = null as any
         this.boxMaterialFront = null as any
         this.origCollisionPlanes = [
-            new Plane(0, 0, -1, Math.abs(this.boxMax.z)),
-            new Plane(0, 0, 1, Math.abs(this.boxMin.z)),
-            new Plane(1, 0, 0, Math.abs(this.boxMin.x)),
-            new Plane(-1, 0, 0, Math.abs(this.boxMax.x)),
-            new Plane(0, -1, 0, Math.abs(this.boxMax.y)),
-            new Plane(0, 1, 0, Math.abs(this.boxMin.y)),
-            new Plane(0, 1, 0, Math.abs(this.boxMin.y)),
+            new Plane(0, 0, -1, Math.abs(this._boxMax.z)),
+            new Plane(0, 0, 1, Math.abs(this._boxMin.z)),
+            new Plane(1, 0, 0, Math.abs(this._boxMin.x)),
+            new Plane(-1, 0, 0, Math.abs(this._boxMax.x)),
+            new Plane(0, -1, 0, Math.abs(this._boxMax.y)),
+            new Plane(0, 1, 0, Math.abs(this._boxMin.y)),
+            new Plane(0, 1, 0, Math.abs(this._boxMin.y)),
         ]
         this.collisionPlanes = []
         for (let i = 0; i < this.origCollisionPlanes.length; ++i) {
@@ -169,6 +169,14 @@ export class FluidVisualisation {
 
     set boxOpacity(value: number) {
         this.boxMaterial.alpha = value
+    }
+
+    get boxMin(): Vector3 {
+        return this._boxMin
+    }
+
+    get boxMax(): Vector3 {
+        return this._boxMax
     }
 
     async run() {
@@ -191,14 +199,14 @@ export class FluidVisualisation {
         this.boxMaterialFront.cullBackFaces = true
 
         this.boxMesh = MeshBuilder.CreateBox('boxMesh', {
-            width: this.boxMax.x - this.boxMin.x,
-            height: this.boxMax.y - this.boxMin.y,
-            depth: this.boxMax.z - this.boxMin.z,
+            width: this._boxMax.x - this._boxMin.x,
+            height: this._boxMax.y - this._boxMin.y,
+            depth: this._boxMax.z - this._boxMin.z,
         })
         this.boxMesh.material = this.boxMaterial
-        this.boxMesh.position.x = (this.boxMax.x + this.boxMin.x) / 2
-        this.boxMesh.position.y = (this.boxMax.y + this.boxMin.y) / 2
-        this.boxMesh.position.z = (this.boxMax.z + this.boxMin.z) / 2
+        this.boxMesh.position.x = (this._boxMax.x + this._boxMin.x) / 2
+        this.boxMesh.position.y = (this._boxMax.y + this._boxMin.y) / 2
+        this.boxMesh.position.z = (this._boxMax.z + this._boxMin.z) / 2
         this.boxMesh.isPickable = false
 
         this.boxMeshFront = this.boxMesh.clone('boxMeshFront')
@@ -393,14 +401,14 @@ export class FluidVisualisation {
     public rotateMeshes(angleX: number, angleY: number) {
         const transform = Matrix.RotationYawPitchRoll(0, angleX * Math.PI / 180, angleY * Math.PI / 180)
         const boxVertices = [
-            new Vector3(this.boxMin.x, this.boxMin.y, this.boxMin.z),
-            new Vector3(this.boxMin.x, this.boxMax.y, this.boxMin.z),
-            new Vector3(this.boxMin.x, this.boxMax.y, this.boxMax.z),
-            new Vector3(this.boxMin.x, this.boxMin.y, this.boxMax.z),
-            new Vector3(this.boxMax.x, this.boxMin.y, this.boxMin.z),
-            new Vector3(this.boxMax.x, this.boxMax.y, this.boxMin.z),
-            new Vector3(this.boxMax.x, this.boxMax.y, this.boxMax.z),
-            new Vector3(this.boxMax.x, this.boxMin.y, this.boxMax.z),
+            new Vector3(this._boxMin.x, this._boxMin.y, this._boxMin.z),
+            new Vector3(this._boxMin.x, this._boxMax.y, this._boxMin.z),
+            new Vector3(this._boxMin.x, this._boxMax.y, this._boxMax.z),
+            new Vector3(this._boxMin.x, this._boxMin.y, this._boxMax.z),
+            new Vector3(this._boxMax.x, this._boxMin.y, this._boxMin.z),
+            new Vector3(this._boxMax.x, this._boxMax.y, this._boxMin.z),
+            new Vector3(this._boxMax.x, this._boxMax.y, this._boxMax.z),
+            new Vector3(this._boxMax.x, this._boxMin.y, this._boxMax.z),
         ]
 
         let yMin = Number.MAX_VALUE
@@ -421,9 +429,9 @@ export class FluidVisualisation {
         if (this.boxMesh && this.boxMeshFront) {
             this.boxMesh.rotationQuaternion = quat
             this.boxMeshFront.rotationQuaternion = quat
-            this.boxMesh.position.x = (this.boxMin.x + this.boxMax.x) / 2
-            this.boxMesh.position.y = (this.boxMin.y + this.boxMax.y) / 2
-            this.boxMesh.position.z = (this.boxMin.z + this.boxMax.z) / 2
+            this.boxMesh.position.x = (this._boxMin.x + this._boxMax.x) / 2
+            this.boxMesh.position.y = (this._boxMin.y + this._boxMax.y) / 2
+            this.boxMesh.position.z = (this._boxMin.z + this._boxMax.z) / 2
             this.boxMesh.position = Vector3.TransformCoordinates(this.boxMesh.position, transform)
             this.boxMeshFront.position = this.boxMesh.position
         }
@@ -466,38 +474,38 @@ export class FluidVisualisation {
     }
 
     public changeBoxDimension(min: Vector3, max: Vector3) {
-        this.boxMin = min
-        this.boxMax = max
+        this._boxMin = min
+        this._boxMax = max
 
-        this.origCollisionPlanes[0].d = Math.abs(this.boxMax.z)
-        this.origCollisionPlanes[1].d = Math.abs(this.boxMin.z)
-        this.origCollisionPlanes[2].d = Math.abs(this.boxMin.x)
-        this.origCollisionPlanes[3].d = Math.abs(this.boxMax.x)
-        this.origCollisionPlanes[4].d = Math.abs(this.boxMax.y)
-        this.origCollisionPlanes[5].d = Math.abs(this.boxMin.y)
-        this.origCollisionPlanes[6].d = Math.abs(this.boxMin.y)
+        this.origCollisionPlanes[0].d = Math.abs(this._boxMax.z)
+        this.origCollisionPlanes[1].d = Math.abs(this._boxMin.z)
+        this.origCollisionPlanes[2].d = Math.abs(this._boxMin.x)
+        this.origCollisionPlanes[3].d = Math.abs(this._boxMax.x)
+        this.origCollisionPlanes[4].d = Math.abs(this._boxMax.y)
+        this.origCollisionPlanes[5].d = Math.abs(this._boxMin.y)
+        this.origCollisionPlanes[6].d = Math.abs(this._boxMin.y)
         
-        this.collisionPlanes[0][1].params[1] = Math.abs(this.boxMax.z)
-        this.collisionPlanes[1][1].params[1] = Math.abs(this.boxMin.z)
-        this.collisionPlanes[2][1].params[1] = Math.abs(this.boxMin.x)
-        this.collisionPlanes[3][1].params[1] = Math.abs(this.boxMax.x)
-        this.collisionPlanes[4][1].params[1] = Math.abs(this.boxMax.y)
-        this.collisionPlanes[5][1].params[1] = Math.abs(this.boxMin.y)
-        this.collisionPlanes[6][1].params[1] = Math.abs(this.boxMin.y)
+        this.collisionPlanes[0][1].params[1] = Math.abs(this._boxMax.z)
+        this.collisionPlanes[1][1].params[1] = Math.abs(this._boxMin.z)
+        this.collisionPlanes[2][1].params[1] = Math.abs(this._boxMin.x)
+        this.collisionPlanes[3][1].params[1] = Math.abs(this._boxMax.x)
+        this.collisionPlanes[4][1].params[1] = Math.abs(this._boxMax.y)
+        this.collisionPlanes[5][1].params[1] = Math.abs(this._boxMin.y)
+        this.collisionPlanes[6][1].params[1] = Math.abs(this._boxMin.y)
 
         const quat = this.boxMesh?.rotationQuaternion
         this.boxMesh?.dispose()
         this.boxMeshFront?.dispose()
 
         this.boxMesh = MeshBuilder.CreateBox('boxMesh', {
-            width: this.boxMax.x - this.boxMin.x,
-            height: this.boxMax.y - this.boxMin.y,
-            depth: this.boxMax.z - this.boxMin.z,
+            width: this._boxMax.x - this._boxMin.x,
+            height: this._boxMax.y - this._boxMin.y,
+            depth: this._boxMax.z - this._boxMin.z,
         })
         this.boxMesh.material = this.boxMaterial
-        this.boxMesh.position.x = (this.boxMax.x + this.boxMin.x) / 2
-        this.boxMesh.position.y = (this.boxMax.y + this.boxMin.y) / 2
-        this.boxMesh.position.z = (this.boxMax.z + this.boxMin.z) / 2
+        this.boxMesh.position.x = (this._boxMax.x + this._boxMin.x) / 2
+        this.boxMesh.position.y = (this._boxMax.y + this._boxMin.y) / 2
+        this.boxMesh.position.z = (this._boxMax.z + this._boxMin.z) / 2
         this.boxMesh.isPickable = false
 
         this.boxMeshFront = this.boxMesh.clone('boxMeshFront')

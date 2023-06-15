@@ -38,7 +38,10 @@ export class FluidSimulator {
     private _computeDensityAndPressureCS: Nullable<ComputeShader> = null;
     private _computeAccelerationCS: Nullable<ComputeShader> = null;
     private _updatePositionsCS: Nullable<ComputeShader> = null;
-    private _checkCollisionsCS: Nullable<ComputeShader> = null;
+    private _checkCollisionsPlaneCS: Nullable<ComputeShader> = null;
+    private _checkCollisionsBoxCS: Nullable<ComputeShader> = null;
+    private _checkCollisionsSphereCS: Nullable<ComputeShader> = null;
+    private _checkCollisionsCylinderCS: Nullable<ComputeShader> = null;
 
     get smoothingRadius() {
         return this._smoothingRadius
@@ -90,7 +93,12 @@ export class FluidSimulator {
     }
 
     private updateParamBuffers(deltaTime?: number) {
-        if (!this.visualisationStore.useWebGPU || !this.computeParams || !this.updateParams) {
+        if (
+            !this.visualisationStore.useWebGPU || 
+            !this.computeParams ||
+            !this.updateParams ||
+            !this.collisionParams
+        ) {
             return
         }
 
@@ -105,13 +113,17 @@ export class FluidSimulator {
         this.computeParams.updateVector3('gravity', this.gravity)
         this.computeParams.updateFloat('maxAcceleration', this.maxAcceleration)
         this.computeParams.updateFloat('viscosity', this.viscosity)
-
         this.computeParams.update()
 
         this.updateParams.updateFloat('deltaTime', deltaTime ? deltaTime : 1 / 100)
         this.updateParams.updateFloat('maxVelocity', this.maxVelocity)
         this.updateParams.updateUInt('currentNumParticles', this.currentNumParticles)
         this.updateParams.update()
+
+        this.collisionParams.updateFloat('deltaTime', deltaTime ? deltaTime : 1 / 100)
+        this.collisionParams.updateFloat('maxVelocity', this.maxVelocity)
+        this.collisionParams.updateUInt('currentNumParticles', this.currentNumParticles)
+        this.collisionParams.update()
     }
 
     get positions() {
@@ -213,28 +225,77 @@ export class FluidSimulator {
             this._updatePositionsCS.setStorageBuffer('velocities', this._velocitiesStorageBuffer!)
             this._updatePositionsCS.setStorageBuffer('particles', this._particlesStorageBuffer!)
             
-            this.collisionParams!.addUniform('currentNumParticles', 1);
-            this.collisionParams!.addUniform('restitution', 1);
-            this.collisionParams!.addUniform('particleRadius', 1);
-            this.collisionParams!.addMatrix('transf', Matrix.Identity());
-            this.collisionParams!.addMatrix('invTransf', Matrix.Identity());
-            
-            this._checkCollisionsCS = new ComputeShader(
-                'checkCollisions',
+            this._checkCollisionsPlaneCS = new ComputeShader(
+                'checkCollisionsPlane',
                 this.engine,
-                { computeSource: this.checkCollisionShader },
+                { computeSource: this.checkCollisionShaderPlane },
                 {
                     bindingsMapping: {
                         "params": { group: 0, binding: 0 },
                         "positions": { group: 0, binding: 1 },
                         "velocities": { group: 0, binding: 2 },
+                        "shape": { group: 0, binding: 3}
                     }
                 }
             )
 
-            this._checkCollisionsCS.setUniformBuffer('params', this.updateParams!)
-            this._checkCollisionsCS.setStorageBuffer('positions', this._positionsStorageBuffer!)
-            this._checkCollisionsCS.setStorageBuffer('velocities', this._velocitiesStorageBuffer!)
+            this._checkCollisionsPlaneCS.setUniformBuffer('params', this.collisionParams!)
+            this._checkCollisionsPlaneCS.setStorageBuffer('positions', this._positionsStorageBuffer!)
+            this._checkCollisionsPlaneCS.setStorageBuffer('velocities', this._velocitiesStorageBuffer!)
+
+            this._checkCollisionsBoxCS = new ComputeShader(
+                'checkCollisionsBox',
+                this.engine,
+                { computeSource: this.checkCollisionShaderBox },
+                {
+                    bindingsMapping: {
+                        "params": { group: 0, binding: 0 },
+                        "positions": { group: 0, binding: 1 },
+                        "velocities": { group: 0, binding: 2 },
+                        "shape": { group: 0, binding: 3}
+                    }
+                }
+            )
+
+            this._checkCollisionsBoxCS.setUniformBuffer('params', this.collisionParams!)
+            this._checkCollisionsBoxCS.setStorageBuffer('positions', this._positionsStorageBuffer!)
+            this._checkCollisionsBoxCS.setStorageBuffer('velocities', this._velocitiesStorageBuffer!)
+
+            this._checkCollisionsSphereCS = new ComputeShader(
+                'checkCollisionsSphere',
+                this.engine,
+                { computeSource: this.checkCollisionShaderSphere },
+                {
+                    bindingsMapping: {
+                        "params": { group: 0, binding: 0 },
+                        "positions": { group: 0, binding: 1 },
+                        "velocities": { group: 0, binding: 2 },
+                        "shape": { group: 0, binding: 3}
+                    }
+                }
+            )
+
+            this._checkCollisionsSphereCS.setUniformBuffer('params', this.collisionParams!)
+            this._checkCollisionsSphereCS.setStorageBuffer('positions', this._positionsStorageBuffer!)
+            this._checkCollisionsSphereCS.setStorageBuffer('velocities', this._velocitiesStorageBuffer!)
+
+            this._checkCollisionsCylinderCS = new ComputeShader(
+                'checkCollisionsCylinder',
+                this.engine,
+                { computeSource: this.checkCollisionShaderCylinder },
+                {
+                    bindingsMapping: {
+                        "params": { group: 0, binding: 0 },
+                        "positions": { group: 0, binding: 1 },
+                        "velocities": { group: 0, binding: 2 },
+                        "shape": { group: 0, binding: 3}
+                    }
+                }
+            )
+
+            this._checkCollisionsCylinderCS.setUniformBuffer('params', this.collisionParams!)
+            this._checkCollisionsCylinderCS.setStorageBuffer('positions', this._positionsStorageBuffer!)
+            this._checkCollisionsCylinderCS.setStorageBuffer('velocities', this._velocitiesStorageBuffer!)
         } else {
             this._hash = new Hash(this._smoothingRadius, this._numMaxParticles)
             for (let i = this._particles.length; i < this._numMaxParticles; ++i) {
@@ -296,6 +357,10 @@ export class FluidSimulator {
         this.updateParams.addUniform('currentNumParticles', 1)
 
         this.collisionParams = new UniformBuffer(this.engine)
+        this.collisionParams.addUniform('deltaTime', 1)
+        this.collisionParams.addUniform('maxVelocity', 1);
+        this.collisionParams.addUniform('particleRadius', 1);
+        this.collisionParams.addUniform('currentNumParticles', 1);
 
         this.updateParamBuffers(1 / 100)
     }
@@ -306,7 +371,7 @@ export class FluidSimulator {
             this._computeDensityAndPressureCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 64))
             this._computeAccelerationCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 64))
             this._updatePositionsCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 64))
-            this._checkCollisionsCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 64))
+            this.checkCollisions(particleRadius, collisionObjects)
         } else {
             this._hash.create(this._positions!, this.currentNumParticles)
             this.computeDensityAndPressure()
@@ -483,40 +548,106 @@ export class FluidSimulator {
         const normal = TmpVectors.Vector3[7]
 
         for (let i = 0; i < collisionObjects.length; ++i) {
-            const shape = collisionObjects[6][1]
-            // const shape = collisionObjects[i][1]
-            // if (shape.disabled) {
-            //     continue
-            // }
-
-            for (let a = 0; a < this.currentNumParticles; ++a) {
-                const px = positions[a * 3 + 0]
-                const py = positions[a * 3 + 1]
-                const pz = positions[a * 3 + 2]
-                pos.copyFromFloats(px, py, pz)
-                Vector3.TransformCoordinatesToRef(pos, shape.invTransf, pos)
-                pos.scaleInPlace(1 / shape.scale)
-                const dist = shape.scale * shape.sdEvaluate(pos, ...shape.params) - particleRadius
-
-                if (dist < 0) {
-                    shape.computeNormal(pos, shape, normal)
-                    const restitution = shape.collisionRestitution ?? this.shapeCollisionRestitution
-                    const dotvn =
-                        velocities[a * 3 + 0] * normal.x +
-                        velocities[a * 3 + 1] * normal.y +
-                        velocities[a * 3 + 2] * normal.z
-
-                    velocities[a * 3 + 0] = (velocities[a * 3 + 0] - 2 * dotvn * normal.x) * restitution
-                    velocities[a * 3 + 1] = (velocities[a * 3 + 1] - 2 * dotvn * normal.y) * restitution
-                    velocities[a * 3 + 2] = (velocities[a * 3 + 2] - 2 * dotvn * normal.z) * restitution
-
-                    positions[a * 3 + 0] -= normal.x * dist
-                    positions[a * 3 + 1] -= normal.y * dist
-                    positions[a * 3 + 2] -= normal.z * dist
-                }
+            const shape = collisionObjects[i][1]
+            if (shape.disabled) {
+                continue
             }
 
-            break;
+            if (this.visualisationStore.useWebGPU) {
+                this.collisionParams!.updateFloat('particleRadius', particleRadius)
+                this.collisionParams!.update()
+
+                const restitution = shape.collisionRestitution ?? this.shapeCollisionRestitution
+                // It is plane
+                if (!shape.mesh) {
+                    const shapeBuffer = new UniformBuffer(this.engine)
+                    shapeBuffer.addUniform('restitution', 1)
+                    shapeBuffer.addVector3('normal', Vector3.Zero())
+                    shapeBuffer.addUniform('h', 1)
+    
+                    shapeBuffer.updateFloat('restitution', restitution)
+                    shapeBuffer.updateVector3('normal', shape.params[0])
+                    shapeBuffer.updateFloat('h', shape.params[1])
+                    shapeBuffer.update()
+    
+                    this._checkCollisionsPlaneCS!.setUniformBuffer('shape', shapeBuffer)
+                    this._checkCollisionsPlaneCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 64))
+                } else if (shape.mesh.name === 'Box') {
+                    const shapeBuffer = new UniformBuffer(this.engine)
+                    shapeBuffer.addUniform('restitution', 1)
+                    shapeBuffer.addMatrix('transf', Matrix.Zero())
+                    shapeBuffer.addMatrix('invTransf', Matrix.Zero())
+                    shapeBuffer.addVector3('extend', Vector3.Zero())
+    
+                    shapeBuffer.updateFloat('restitution', restitution)
+                    shapeBuffer.updateMatrix('transf', shape.transf)
+                    shapeBuffer.updateMatrix('invTransf', shape.invTransf)
+                    shapeBuffer.updateVector3('extend', shape.params[0])
+                    shapeBuffer.update()
+    
+                    this._checkCollisionsBoxCS!.setUniformBuffer('shape', shapeBuffer)
+                    this._checkCollisionsBoxCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 64))
+                } else if (shape.mesh.name === 'Sphere') {
+                    const shapeBuffer = new UniformBuffer(this.engine)
+                    shapeBuffer.addUniform('restitution', 1)
+                    shapeBuffer.addMatrix('transf', Matrix.Zero())
+                    shapeBuffer.addMatrix('invTransf', Matrix.Zero())
+                    shapeBuffer.addUniform('radius', 1)
+    
+                    shapeBuffer.updateFloat('restitution', restitution)
+                    shapeBuffer.updateMatrix('transf', shape.transf)
+                    shapeBuffer.updateMatrix('invTransf', shape.invTransf)
+                    shapeBuffer.updateFloat('radius', shape.params[0])
+                    shapeBuffer.update()
+    
+                    this._checkCollisionsSphereCS!.setUniformBuffer('shape', shapeBuffer)
+                    this._checkCollisionsSphereCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 64))
+                } else if (shape.mesh.name === 'Cylinder') {
+                    const shapeBuffer = new UniformBuffer(this.engine)
+                    shapeBuffer.addUniform('restitution', 1)
+                    shapeBuffer.addMatrix('transf', Matrix.Zero())
+                    shapeBuffer.addMatrix('invTransf', Matrix.Zero())
+                    shapeBuffer.addUniform('radius', 1)
+                    shapeBuffer.addUniform('height', 1)
+    
+                    shapeBuffer.updateFloat('restitution', restitution)
+                    shapeBuffer.updateMatrix('transf', shape.transf)
+                    shapeBuffer.updateMatrix('invTransf', shape.invTransf)
+                    shapeBuffer.updateFloat('radius', shape.params[0])
+                    shapeBuffer.updateFloat('height', shape.params[1])
+                    shapeBuffer.update()
+    
+                    this._checkCollisionsCylinderCS!.setUniformBuffer('shape', shapeBuffer)
+                    this._checkCollisionsCylinderCS!.dispatchWhenReady(Math.ceil(this.currentNumParticles / 64))
+                }
+            } else {
+                for (let a = 0; a < this.currentNumParticles; ++a) {
+                    const px = positions[a * 3 + 0]
+                    const py = positions[a * 3 + 1]
+                    const pz = positions[a * 3 + 2]
+                    pos.copyFromFloats(px, py, pz)
+                    Vector3.TransformCoordinatesToRef(pos, shape.invTransf, pos)
+                    pos.scaleInPlace(1 / shape.scale)
+                    const dist = shape.scale * shape.sdEvaluate(pos, ...shape.params) - particleRadius
+    
+                    if (dist < 0) {
+                        shape.computeNormal(pos, shape, normal)
+                        const restitution = shape.collisionRestitution ?? this.shapeCollisionRestitution
+                        const dotvn =
+                            velocities[a * 3 + 0] * normal.x +
+                            velocities[a * 3 + 1] * normal.y +
+                            velocities[a * 3 + 2] * normal.z
+    
+                        velocities[a * 3 + 0] = (velocities[a * 3 + 0] - 2 * dotvn * normal.x) * restitution
+                        velocities[a * 3 + 1] = (velocities[a * 3 + 1] - 2 * dotvn * normal.y) * restitution
+                        velocities[a * 3 + 2] = (velocities[a * 3 + 2] - 2 * dotvn * normal.z) * restitution
+    
+                        positions[a * 3 + 0] -= normal.x * dist
+                        positions[a * 3 + 1] -= normal.y * dist
+                        positions[a * 3 + 2] -= normal.z * dist
+                    }
+                }
+            }
         }
     }
 
@@ -735,35 +866,25 @@ export class FluidSimulator {
         positions[index * 3 + 2] += params.deltaTime * velocities[index * 3 + 2];
     }
     `
-    private checkCollisionShader: string =
+    private checkCollisionShaderPlane: string =
     `
-    struct Partile {
-        mass: f32,
-        density: f32,
-        pressure: f32,
-        accelX: f32,
-        accelY: f32,
-        accelZ: f32,
-    };
-
     struct Params {
         deltaTime: f32,
         maxVelocity: f32,
+        particleRadius: f32,
         currentNumParticles: u32,
     };
 
-    // struct Params {
-    //     currentNumParticles: u32,
-    //     restitution: f32,
-    //     particleRadius: f32,
-    //     transf: mat4x4<f32>,
-    //     invTransf: mat4x4<f32>,
-    //     shapeParams: array<f32>,
-    // };
+    struct Shape {
+        restitution: f32,
+        normal: vec3<f32>,
+        h: f32
+    };
 
     @group(0) @binding(0) var<uniform> params : Params;
     @group(0) @binding(1) var<storage, read_write> positions : array<f32>;
     @group(0) @binding(2) var<storage, read_write> velocities : array<f32>;
+    @group(0) @binding(3) var<uniform> shape : Shape;
 
     const eps = 0.0001;
     const eps1 = vec4<f32>(eps, -eps, -eps, 1);
@@ -783,34 +904,96 @@ export class FluidSimulator {
         normal += SDPlane(pos + eps2) * dir2;   
         normal += SDPlane(pos + eps3) * dir3;   
         normal += SDPlane(pos + eps4) * dir4;
-        
-        // normal += SDVerticalCylinder(pos + eps1) * dir1;   
-        // normal += SDVerticalCylinder(pos + eps2) * dir2;   
-        // normal += SDVerticalCylinder(pos + eps3) * dir3;   
-        // normal += SDVerticalCylinder(pos + eps4) * dir4;
-        
+
         return normalize(normal);
     }
 
     fn SDPlane(pos: vec4<f32>) -> f32 {
-        // let n = vec4<f32>(params.shapeParams[0], params.shapeParams[1], params.shapeParams[2], 0);
-        // let h = params.shapeParams[3];
-        let n = vec4<f32>(0, 1, 0, 0);
-        let h = 0.5;
+        let n = vec4<f32>(shape.normal, 0);
+        let h = shape.h;
         return dot(pos, n) + h;
     }
 
-    fn SDSphere(pos: vec4<f32>) -> f32 {
-        // let s = radius
-        let s = 1.;
-        return length(pos) - s; 
+    @compute @workgroup_size(64, 1, 1)
+    fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
+        let index = global_id.x;
+
+        if (index >= params.currentNumParticles) {
+            return;
+        }
+
+        let px = positions[index * 3 + 0];
+        let py = positions[index * 3 + 1];
+        let pz = positions[index * 3 + 2];
+
+        let pos = vec4<f32>(px, py, pz, 1);
+        let dist = SDPlane(pos) - params.particleRadius;
+
+        if (dist < 0) {
+            let normal = computeNormal(pos);
+            let dotvn = 
+                velocities[index * 3 + 0] * normal.x +
+                velocities[index * 3 + 1] * normal.y +
+                velocities[index * 3 + 2] * normal.z;
+
+            velocities[index * 3 + 0] = (velocities[index * 3 + 0] - 2 * dotvn * normal.x) * shape.restitution;
+            velocities[index * 3 + 1] = (velocities[index * 3 + 1] - 2 * dotvn * normal.y) * shape.restitution;
+            velocities[index * 3 + 2] = (velocities[index * 3 + 2] - 2 * dotvn * normal.z) * shape.restitution;
+
+            positions[index * 3 + 0] -= normal.x * dist;
+            positions[index * 3 + 1] -= normal.y * dist;
+            positions[index * 3 + 2] -= normal.z * dist;
+        }
+    }
+    `
+    private checkCollisionShaderBox: string =
+    `
+    struct Params {
+        deltaTime: f32,
+        maxVelocity: f32,
+        particleRadius: f32,
+        currentNumParticles: u32,
+    };
+
+    struct Shape {
+        restitution: f32,
+        transf: mat4x4<f32>,
+        invTransf: mat4x4<f32>,
+        extend: vec3<f32>,
+    };
+
+    @group(0) @binding(0) var<uniform> params : Params;
+    @group(0) @binding(1) var<storage, read_write> positions : array<f32>;
+    @group(0) @binding(2) var<storage, read_write> velocities : array<f32>;
+    @group(0) @binding(3) var<uniform> shape : Shape;
+
+    const eps = 0.0001;
+    const eps1 = vec4<f32>(eps, -eps, -eps, 1);
+    const eps2 = vec4<f32>(-eps, -eps, eps, 1);
+    const eps3 = vec4<f32>(-eps, eps, -eps, 1);
+    const eps4 = vec4<f32>(eps, eps, eps, 1);
+
+    const dir1 = vec4<f32>(1, -1, -1, 0);
+    const dir2 = vec4<f32>(-1, -1, 1, 0);
+    const dir3 = vec4<f32>(-1, 1, -1, 0);
+    const dir4 = vec4<f32>(1, 1, 1, 0);
+
+    fn computeNormal(pos: vec4<f32>) -> vec4<f32> {
+        var normal = vec4<f32>(0, 0, 0, 0);
+
+        normal += SDBox(pos + eps1) * dir1;   
+        normal += SDBox(pos + eps2) * dir2;   
+        normal += SDBox(pos + eps3) * dir3;   
+        normal += SDBox(pos + eps4) * dir4;
+
+        normal = shape.transf * normal;
+
+        return normalize(normal);
     }
 
     fn SDBox(pos: vec4<f32>) -> f32 {
-        // extend
-        let b = vec3<f32>(0.25, 0.25, 0.25);
         var q = vec3<f32>(abs(pos.x), abs(pos.y), abs(pos.z));
-        q -= b;
+        q -= shape.extend;
 
         let tmp = min(max(q.x, max(q.y, q.z)), 0);
         q.x = max(q.x, 0);
@@ -820,10 +1003,171 @@ export class FluidSimulator {
         return length(q) + tmp;
     }
 
+    @compute @workgroup_size(64, 1, 1)
+    fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
+        let index = global_id.x;
+
+        if (index >= params.currentNumParticles) {
+            return;
+        }
+
+        let px = positions[index * 3 + 0];
+        let py = positions[index * 3 + 1];
+        let pz = positions[index * 3 + 2];
+
+        let pos = shape.invTransf * vec4<f32>(px, py, pz, 1);
+        let dist = SDBox(pos) - params.particleRadius;
+
+        if (dist < 0) {
+            let normal = computeNormal(pos);
+            let dotvn = 
+                velocities[index * 3 + 0] * normal.x +
+                velocities[index * 3 + 1] * normal.y +
+                velocities[index * 3 + 2] * normal.z;
+
+            velocities[index * 3 + 0] = (velocities[index * 3 + 0] - 2 * dotvn * normal.x) * shape.restitution;
+            velocities[index * 3 + 1] = (velocities[index * 3 + 1] - 2 * dotvn * normal.y) * shape.restitution;
+            velocities[index * 3 + 2] = (velocities[index * 3 + 2] - 2 * dotvn * normal.z) * shape.restitution;
+
+            positions[index * 3 + 0] -= normal.x * dist;
+            positions[index * 3 + 1] -= normal.y * dist;
+            positions[index * 3 + 2] -= normal.z * dist;
+        }
+    }
+    `
+    private checkCollisionShaderSphere: string =
+    `
+    struct Params {
+        deltaTime: f32,
+        maxVelocity: f32,
+        particleRadius: f32,
+        currentNumParticles: u32,
+    };
+
+    struct Shape {
+        restitution: f32,
+        transf: mat4x4<f32>,
+        invTransf: mat4x4<f32>,
+        radius: f32
+    };
+
+    @group(0) @binding(0) var<uniform> params : Params;
+    @group(0) @binding(1) var<storage, read_write> positions : array<f32>;
+    @group(0) @binding(2) var<storage, read_write> velocities : array<f32>;
+    @group(0) @binding(3) var<uniform> shape : Shape;
+
+    const eps = 0.0001;
+    const eps1 = vec4<f32>(eps, -eps, -eps, 1);
+    const eps2 = vec4<f32>(-eps, -eps, eps, 1);
+    const eps3 = vec4<f32>(-eps, eps, -eps, 1);
+    const eps4 = vec4<f32>(eps, eps, eps, 1);
+
+    const dir1 = vec4<f32>(1, -1, -1, 0);
+    const dir2 = vec4<f32>(-1, -1, 1, 0);
+    const dir3 = vec4<f32>(-1, 1, -1, 0);
+    const dir4 = vec4<f32>(1, 1, 1, 0);
+
+    fn computeNormal(pos: vec4<f32>) -> vec4<f32> {
+        var normal = vec4<f32>(0, 0, 0, 0);
+
+        normal += SDSphere(pos + eps1) * dir1;   
+        normal += SDSphere(pos + eps2) * dir2;   
+        normal += SDSphere(pos + eps3) * dir3;   
+        normal += SDSphere(pos + eps4) * dir4;
+
+        normal = shape.transf * normal;
+
+        return normalize(normal);
+    }
+
+    fn SDSphere(pos: vec4<f32>) -> f32 {
+        let r = shape.radius;
+        let q = vec3<f32>(pos.x, pos.y, pos.z);
+        return length(q) - r; 
+    }
+
+    @compute @workgroup_size(64, 1, 1)
+    fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
+        let index = global_id.x;
+
+        if (index >= params.currentNumParticles) {
+            return;
+        }
+
+        let px = positions[index * 3 + 0];
+        let py = positions[index * 3 + 1];
+        let pz = positions[index * 3 + 2];
+
+        let pos = shape.invTransf * vec4<f32>(px, py, pz, 1);
+        let dist = SDSphere(pos) - params.particleRadius;
+
+        if (dist < 0) {
+            let normal = computeNormal(pos);
+            let dotvn = 
+                velocities[index * 3 + 0] * normal.x +
+                velocities[index * 3 + 1] * normal.y +
+                velocities[index * 3 + 2] * normal.z;
+
+            velocities[index * 3 + 0] = (velocities[index * 3 + 0] - 2 * dotvn * normal.x) * shape.restitution;
+            velocities[index * 3 + 1] = (velocities[index * 3 + 1] - 2 * dotvn * normal.y) * shape.restitution;
+            velocities[index * 3 + 2] = (velocities[index * 3 + 2] - 2 * dotvn * normal.z) * shape.restitution;
+
+            positions[index * 3 + 0] -= normal.x * dist;
+            positions[index * 3 + 1] -= normal.y * dist;
+            positions[index * 3 + 2] -= normal.z * dist;
+        }
+    }
+    `
+    private checkCollisionShaderCylinder: string =
+    `
+    struct Params {
+        deltaTime: f32,
+        maxVelocity: f32,
+        particleRadius: f32,
+        currentNumParticles: u32,
+    };
+
+    struct Shape {
+        restitution: f32,
+        transf: mat4x4<f32>,
+        invTransf: mat4x4<f32>,
+        radius: f32,
+        height: f32,
+    };
+
+    @group(0) @binding(0) var<uniform> params : Params;
+    @group(0) @binding(1) var<storage, read_write> positions : array<f32>;
+    @group(0) @binding(2) var<storage, read_write> velocities : array<f32>;
+    @group(0) @binding(3) var<uniform> shape : Shape;
+
+    const eps = 0.0001;
+    const eps1 = vec4<f32>(eps, -eps, -eps, 1);
+    const eps2 = vec4<f32>(-eps, -eps, eps, 1);
+    const eps3 = vec4<f32>(-eps, eps, -eps, 1);
+    const eps4 = vec4<f32>(eps, eps, eps, 1);
+
+    const dir1 = vec4<f32>(1, -1, -1, 0);
+    const dir2 = vec4<f32>(-1, -1, 1, 0);
+    const dir3 = vec4<f32>(-1, 1, -1, 0);
+    const dir4 = vec4<f32>(1, 1, 1, 0);
+
+    fn computeNormal(pos: vec4<f32>) -> vec4<f32> {
+        var normal = vec4<f32>(0, 0, 0, 0);
+
+        normal += SDVerticalCylinder(pos + eps1) * dir1;   
+        normal += SDVerticalCylinder(pos + eps2) * dir2;   
+        normal += SDVerticalCylinder(pos + eps3) * dir3;   
+        normal += SDVerticalCylinder(pos + eps4) * dir4;
+
+        normal = shape.transf * normal;
+
+        return normalize(normal);
+    }
+
     fn SDVerticalCylinder(pos: vec4<f32>) -> f32 {
         // radius and height
-        let r = 0.25;
-        let h = 0.75;
+        let r = shape.radius;
+        let h = shape.height;
         let dx = abs(sqrt(pos.x * pos.x + pos.z * pos.z)) - r;
         let dy = abs(pos.y) - h / 2.;
         let dx2 = max(dx, 0);
@@ -839,28 +1183,23 @@ export class FluidSimulator {
             return;
         }
 
-        let restitution = 0.98;
-        let particleRadius = 0.04;
         let px = positions[index * 3 + 0];
         let py = positions[index * 3 + 1];
         let pz = positions[index * 3 + 2];
 
-        // let pos = vec4<f32>(px, py, pz, 1) * params.invTransf;
-        let pos = vec4<f32>(px, py, pz, 1);
-        let dist = SDPlane(pos) - particleRadius;
-        // let dist = SDVerticalCylinder(pos) - particleRadius;
+        let pos = shape.invTransf * vec4<f32>(px, py, pz, 1);
+        let dist = SDVerticalCylinder(pos) - params.particleRadius;
 
         if (dist < 0) {
-            // let normal = vec3<f32>(0, 1, 0);
             let normal = computeNormal(pos);
             let dotvn = 
                 velocities[index * 3 + 0] * normal.x +
                 velocities[index * 3 + 1] * normal.y +
                 velocities[index * 3 + 2] * normal.z;
 
-            velocities[index * 3 + 0] = (velocities[index * 3 + 0] - 2 * dotvn * normal.x) * restitution;
-            velocities[index * 3 + 1] = (velocities[index * 3 + 1] - 2 * dotvn * normal.y) * restitution;
-            velocities[index * 3 + 2] = (velocities[index * 3 + 2] - 2 * dotvn * normal.z) * restitution;
+            velocities[index * 3 + 0] = (velocities[index * 3 + 0] - 2 * dotvn * normal.x) * shape.restitution;
+            velocities[index * 3 + 1] = (velocities[index * 3 + 1] - 2 * dotvn * normal.y) * shape.restitution;
+            velocities[index * 3 + 2] = (velocities[index * 3 + 2] - 2 * dotvn * normal.z) * shape.restitution;
 
             positions[index * 3 + 0] -= normal.x * dist;
             positions[index * 3 + 1] -= normal.y * dist;

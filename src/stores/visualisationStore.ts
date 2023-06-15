@@ -51,6 +51,24 @@ export const useVisualisationStore = defineStore('visulisationStore', {
     }
   },
 
+  getters: {
+    getBoundingBoxMin(): Vector3 {
+      if (this.renderScene) {
+        return this.renderScene.fluidVisualisation.boxMin
+      }
+
+      return Vector3.One().scale(-1)
+    },
+
+    getBoundingBoxMax(): Vector3 {
+      if (this.renderScene) {
+        return this.renderScene.fluidVisualisation.boxMax
+      }
+
+      return Vector3.One()
+    },
+  },
+
   actions: {
     async init(canvas: HTMLCanvasElement) {
       const engineVersion = window.localStorage.getItem(ENGINE_VERSION)
@@ -144,8 +162,8 @@ export const useVisualisationStore = defineStore('visulisationStore', {
     resetMeshToAdd() {
       if (this.meshToAdd) {
         this.meshToAdd.position = Vector3.Zero()
-        this.zoomToFit()
         this.sceneItems.push(this.meshToAdd)
+        this.zoomToFit()
         this.meshToAdd = null
       }
     },
